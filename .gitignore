@@ -1,0 +1,9 @@
+# OS and IDE specific files
+.DS_Store
+.idea/
+
+# Skip dependency packages
+node_modules/
+
+# Skip test files
+tmp/*.*

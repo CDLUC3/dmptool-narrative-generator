@@ -1,0 +1,156 @@
+{
+  "contact": {
+    "contact_id": {
+      "identifier": "https://orcid.org/0000-0000-0000-TST1",
+      "type": "orcid"
+    },
+    "dmproadmap_affiliation": {
+      "affiliation_id": {
+        "identifier": "https://ror.org/03yrm5c26",
+        "type": "ror"
+      },
+      "name": "California Digital Library"
+    },
+    "mbox": "road.runner@example.com",
+    "name": "Road Runner"
+  },
+  "contributor": [
+    {
+      "contributor_id": {
+        "identifier": "https://orcid.org/0000-0000-0000-TST2",
+        "type": "orcid"
+      },
+      "dmproadmap_affiliation": {
+        "affiliation_id": {
+          "identifier": "https://ror.org/00dmfq477",
+          "type": "ror"
+        },
+        "name": "University of California Office of the President"
+      },
+      "mbox": "bugs@toons.example.com",
+      "name": "Bugs Bunny",
+      "role": [
+        "http://credit.niso.org/contributor-roles/investigation"
+      ]
+    },
+    {
+      "contributor_id": {
+        "identifier": "https://orcid.org/0000-0000-0000-TST1",
+        "type": "orcid"
+      },
+      "dmproadmap_affiliation": {
+        "affiliation_id": {
+          "identifier": "https://ror.org/03yrm5c26",
+          "type": "ror"
+        },
+        "name": "California Digital Library"
+      },
+      "mbox": "road.runner@example.com",
+      "name": "Road Runner",
+      "role": [
+        "http://credit.niso.org/contributor-roles/investigation"
+      ]
+    }
+  ],
+  "created": "2025-08-06T15:06:35Z",
+  "dataset": [
+    {
+      "description": "No individual datasets have been defined for this DMP.",
+      "keyword": [
+        "Biological sciences",
+        "1.6 - Biological sciences"
+      ],
+      "title": "Generic dataset",
+      "type": "dataset"
+    }
+  ],
+  "description": "<p>Social interaction and communication <strong><em>difficulties</em></strong> between cartoon characters.</p>",
+  "dmproadmap_narrative": {
+    "sections": [
+      {
+        "questions": [
+          {
+            "answer_id": null,
+            "answer_text": null,
+            "question_id": 464,
+            "question_order": 1,
+            "question_text": "Type of Plan"
+          },
+          {
+            "answer_id": null,
+            "answer_text": null,
+            "question_id": 465,
+            "question_order": 2,
+            "question_text": "Plan Version Number"
+          },
+          {
+            "answer_id": null,
+            "answer_text": null,
+            "question_id": 466,
+            "question_order": 3,
+            "question_text": "Other details"
+          }
+        ],
+        "section_description": "",
+        "section_id": 450,
+        "section_order": 1,
+        "section_title": "PART I: General Information (To be completed by all applicants)"
+      },
+      {
+        "questions": [
+          {
+            "answer_id": null,
+            "answer_text": null,
+            "question_id": 467,
+            "question_order": 1,
+            "question_text": "Details part I"
+          },
+          {
+            "answer_id": null,
+            "answer_text": null,
+            "question_id": 468,
+            "question_order": 2,
+            "question_text": "Details part II"
+          }
+        ],
+        "section_description": "",
+        "section_id": 451,
+        "section_order": 2,
+        "section_title": "PART II: More information"
+      }
+    ],
+    "template_id": 123,
+    "template_title": "Default template",
+    "template_version": "v2"
+  },
+  "dmproadmap_privacy": "public",
+  "dmp_id": {
+    "identifier": "https://doi.org/10.12345/Z9X8Y7",
+    "type": "doi"
+  },
+  "ethical_issues_description": "",
+  "ethical_issues_exist": "no",
+  "ethical_issues_report": "",
+  "language": "eng",
+  "modified": "2025-08-06T15:06:35Z",
+  "project": [
+    {
+      "description": "<p>Social interaction and communication difficulties between cartoon characters.</p>",
+      "end": "2028-01-01T00:00:00Z",
+      "funding": [
+        {
+          "funder_id": {
+            "identifier": "https://ror.org/01cwqze88",
+            "type": "ror"
+          },
+          "funding_status": "planned",
+          "name": "National Institutes of Health (nih.gov)"
+        }
+      ],
+      "start": "2025-01-01T00:00:00Z",
+      "title": "Communication breakdown"
+    }
+  ],
+  "registered": "2025-08-06T15:06:35Z",
+  "title": "Communication breakdown"
+}

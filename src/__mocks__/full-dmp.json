@@ -1,0 +1,458 @@
+{
+  "contact": {
+    "contact_id": {
+      "identifier": "https://orcid.org/0000-0000-0000-TST1",
+      "type": "orcid"
+    },
+    "dmproadmap_affiliation": {
+      "affiliation_id": {
+        "identifier": "https://ror.org/03yrm5c26",
+        "type": "ror"
+      },
+      "name": "California Digital Library"
+    },
+    "mbox": "bugs.bunny@example.com",
+    "name": "Bugs Bunny"
+  },
+  "contributor": [
+    {
+      "contributor_id": {
+        "identifier": "https://orcid.org/0000-0000-0000-TST1",
+        "type": "orcid"
+      },
+      "dmproadmap_affiliation": {
+        "affiliation_id": {
+          "identifier": "https://ror.org/03yrm5c26",
+          "type": "ror"
+        },
+        "name": "California Digital Library"
+      },
+      "mbox": "bugs.bunny@example.com",
+      "name": "Bugs Bunny",
+      "role": [
+        "http://credit.niso.org/contributor-roles/data-curation",
+        "http://credit.niso.org/contributor-roles/investigation"
+      ]
+    },
+    {
+      "contributor_id": {
+        "identifier": "https://orcid.org/0000-0000-0000-TST2",
+        "type": "orcid"
+      },
+      "dmproadmap_affiliation": {
+        "affiliation_id": {
+          "identifier": "https://ror.org/03yrm5c26",
+          "type": "ror"
+        },
+        "name": "California Digital Library"
+      },
+      "mbox": "efudd@example.com",
+      "name": "Elmer Fudd",
+      "role": [
+        "http://credit.niso.org/contributor-roles/investigation"
+      ]
+    },
+    {
+      "contributor_id": {
+        "identifier": "https://orcid.org/0000-0000-0000-TST3",
+        "type": "orcid"
+      },
+      "dmproadmap_affiliation": {
+        "affiliation_id": {
+          "identifier": "https://ror.org/03yrm5c26",
+          "type": "ror"
+        },
+        "name": "California Digital Library"
+      },
+      "mbox": "wile.e.coyote@example.com",
+      "name": "Wile E. Coyote",
+      "role": [
+        "http://credit.niso.org/contributor-roles/data-curation"
+      ]
+    },
+    {
+      "contributor_id": {
+        "identifier": "https://orcid.org/0000-0000-0000-TST4",
+        "type": "orcid"
+      },
+      "dmproadmap_affiliation": {
+        "affiliation_id": {
+          "identifier": "https://ror.org/03yrm5c26",
+          "type": "ror"
+        },
+        "name": "California Digital Library"
+      },
+      "mbox": "road.runner@example.com",
+      "name": "Road Runner",
+      "role": [
+        "http://credit.niso.org/contributor-roles/data-curation"
+      ]
+    }
+  ],
+  "created": "2025-08-08T11:13:04Z",
+  "dataset": [
+    {
+      "dataset_id": {
+        "identifier": "123",
+        "type": "other"
+      },
+      "data_quality_assurance": [
+        ""
+      ],
+      "description": "<p>This dataset will include anvil accident rates of cartoon characters derived from old episodes of Looney Tunes.&nbsp;</p></p>",
+      "distribution": [
+        {
+          "data_access": "open",
+          "host": {
+            "description": "ZENODO builds and operates a simple and innovative service that enables researchers, scientists, EU projects and institutions to share and showcase multidisciplinary research results (data and publications) that are not part of the existing institutional or subject-based repositories of the research communities. ZENODO enables researchers, scientists, EU projects and institutions to: easily share the long tail of small research results in a wide variety of formats including text, spreadsheets, audio, video, and images across all fields of science. display their research results and get credited by making the research results citable and integrate them into existing reporting lines to funding agencies like the European Commission. easily access and reuse shared research results.",
+            "dmproadmap_host_id": {
+              "identifier": "https://www.re3data.org/api/v1/repository/r3d100010468",
+              "type": "url"
+            },
+            "title": "Zenodo",
+            "url": "https://zenodo.org/"
+          },
+          "license": [
+            {
+              "license_ref": "https://spdx.org/licenses/CC-BY-4.0.json",
+              "start_date": "2025-08-08T23:29:21Z"
+            }
+          ],
+          "title": "Anticipated distribution for cartoon character anvil accident rates"
+        }
+      ],
+      "keyword": [
+        "Earth and related environmental sciences",
+        "1.5 - Earth and related environmental sciences"
+      ],
+      "metadata": [
+        {
+          "description": "ISO 19115 - <p>An internationally-adopted schema for describing geographic information and services. It provides information about the identification, the extent, the quality, the spatial and temporal schema, spatial reference, and distribution of digital geographic data.</p><p>Sponsored by the International Standards Organisation, the first edition of ISO 19115 was published in 2003. It has since been split into parts: ISO 19115-1:2014 contains the fundamentals of the standard; ISO 19115-2:2009 contains extensions for imagery and gridded data; and ISO/TS 19115-3:2016 provides an XML schema implementation for the fundamental concepts compatible with ISO/TS 19138:2007 (Geographic Metadata XML, or GMD).</p> - http://www.iso.org/iso/catalogue_detail.htm?csnumber=53798",
+          "metadata_standard_id": {
+            "identifier": "https://rdamsc.bath.ac.uk/api2/m22",
+            "type": "url"
+          }
+        }
+      ],
+      "personal_data": "unknown",
+      "preservation_statement": "",
+      "sensitive_data": "unknown",
+      "technical_resource": [
+      ],
+      "title": "Anvil accident rates",
+      "type": "dataset"
+    },
+    {
+      "dataset_id": {
+        "identifier": "456",
+        "type": "other"
+      },
+      "data_quality_assurance": [
+        ""
+      ],
+      "description": "<p>Microchemistry data as obtained from anvil accident sites.&nbsp;</p> <p>&nbsp;</p> <p>The data will help determine if Acme produced the anvil.</p>",
+      "distribution": [
+        {
+          "data_access": "open",
+          "host": {
+            "description": "Dryad is an open data publishing platform and a community committed to the open availability and routine re-use of all research data. We publish data in any format and any discipline. All Dryad data undergoes a curation process and is published under a CC0 waiver to promote reuse.",
+            "dmproadmap_host_id": {
+              "identifier": "https://www.re3data.org/api/v1/repository/r3d100000044",
+              "type": "url"
+            },
+            "title": "DRYAD",
+            "url": "https://datadryad.org/"
+          },
+          "license": [
+            {
+              "license_ref": "https://spdx.org/licenses/CC-BY-4.0.json",
+              "start_date": "2025-08-09T23:51:30Z"
+            }
+          ],
+          "title": "Anticipated distribution for anvil microchemistry"
+        }
+      ],
+      "keyword": [
+        "Earth and related environmental sciences",
+        "1.5 - Earth and related environmental sciences"
+      ],
+      "metadata": [
+      ],
+      "personal_data": "unknown",
+      "preservation_statement": "",
+      "sensitive_data": "unknown",
+      "technical_resource": [
+      ],
+      "title": "Otolith Microchemistry from juvenile sockeye",
+      "type": "dataset"
+    }
+  ],
+  "description": "<p>Examination of anvil related accidents in Looney Tunes cartoons and what percentages can be tied back to Acme corporation.</p>",
+  "dmproadmap_narrative": {
+    "sections": [
+      {
+        "questions": [
+          {
+            "answer_id": 20,
+            "answer_json": {
+              "type": "textArea",
+              "answer": "<p>This is a TextArea answer</p>"
+            },
+            "question_id": 464,
+            "question_order": 1,
+            "question_text": "How would you correctly answer a TextArea question?"
+          },
+          {
+            "answer_id": 21,
+            "answer_json": {
+              "type": "text",
+              "answer": "This is a Text answer"
+            },
+            "question_id": 465,
+            "question_order": 2,
+            "question_text": "How would you correctly answer a Text field question?"
+          },
+          {
+            "answer_id": 22,
+            "answer_json": {
+              "type": "url",
+              "answer": "https://dmptool.org"
+            },
+            "question_id": 466,
+            "question_order": 3,
+            "question_text": "How would you correctly answer a URL question?"
+          },
+          {
+            "answer_id": 23,
+            "answer_json": {
+              "type": "email",
+              "answer": "tasmanian.devil@example.com"
+            },
+            "question_id": 467,
+            "question_order": 4,
+            "question_text": "How would you correctly answer a Email question?"
+          },
+          {
+            "answer_id": 24,
+            "answer_json": {
+              "type": "currency",
+              "answer": 3456789.75
+            },
+            "question_id": 468,
+            "question_order": 5,
+            "question_text": "How would you correctly answer a Currency question?"
+          },
+          {
+            "answer_id": 25,
+            "answer_json": {
+              "type": "number",
+              "answer": 3475
+            },
+            "question_id": 469,
+            "question_order": 6,
+            "question_text": "How would you correctly answer a Number question?"
+          },
+          {
+            "answer_id": 26,
+            "answer_json": {
+              "type": "numberRange",
+              "answer": { "start": 1234.75, "end": 123456789 }
+            },
+            "question_id": 470,
+            "question_order": 7,
+            "question_text": "How would you correctly answer a NumberRange question?"
+          },
+          {
+            "answer_id": 27,
+            "answer_json": {
+              "type": "date",
+              "answer": "2025-08-21"
+            },
+            "question_id": 471,
+            "question_order": 8,
+            "question_text": "How would you correctly answer a Date question?"
+          },
+          {
+            "answer_id": 28,
+            "answer_json": {
+              "type": "dateRange",
+              "answer": { "start": "2025-08-21", "end": "2027-12-31T23:59:59Z" }
+            },
+            "question_id": 472,
+            "question_order": 9,
+            "question_text": "How would you correctly answer a DateRange question?"
+          },
+          {
+            "answer_id": 29,
+            "answer_json": {
+              "type": "boolean",
+              "answer": true
+            },
+            "question_id": 473,
+            "question_order": 10,
+            "question_text": "How would you correctly answer a Boolean question?"
+          },
+          {
+            "answer_id": 30,
+            "answer_json": {
+              "type": "checkBoxes",
+              "answer": ["Option A", "Option D"]
+            },
+            "question_id": 474,
+            "question_order": 11,
+            "question_text": "How would you correctly answer a Checkboxes question?"
+          },
+          {
+            "answer_id": 31,
+            "answer_json": {
+              "type": "radioButtons",
+              "answer": "Option B"
+            },
+            "question_id": 475,
+            "question_order": 12,
+            "question_text": "How would you correctly answer a Radio buttons question?"
+          },
+          {
+            "answer_id": 32,
+            "answer_json": {
+              "type": "selectBox",
+              "answer": "Option C"
+            },
+            "question_id": 476,
+            "question_order": 13,
+            "question_text": "How would you correctly answer a Select box question?"
+          },
+          {
+            "answer_id": 33,
+            "answer_json": {
+              "type": "multiselectBox",
+              "answer": ["Option B", "Option D"]
+            },
+            "question_id": 477,
+            "question_order": 14,
+            "question_text": "How would you correctly answer a Multiselect box question?"
+          },
+          {
+            "answer_id": 34,
+            "answer_json": {
+              "type": "affiliationSearch",
+              "answer": { "affiliationId":  "https://ror.org/03yrm5c26", "affiliationName":  "California Digital Library" }
+            },
+            "question_id": 478,
+            "question_order": 15,
+            "question_text": "How would you correctly answer a Affiliation search question?"
+          },
+          {
+            "answer_id": 35,
+            "answer_json": {
+              "type": "table",
+              "columnHeadings": ["Column A (boolean)", "Column B (text)", "Column C (number)", "Column D (text)"],
+              "answer": [
+                {
+                  "columns": [
+                    { "type":  "boolean", "answer":  true },
+                    { "type":  "text", "answer":  "Row one" },
+                    { "type":  "number", "answer":  1 },
+                    { "type":  "text", "answer":  "row1" }
+                  ]
+                },
+                {
+                  "columns": [
+                    { "type":  "boolean", "answer":  false },
+                    { "type":  "text", "answer":  "Row two" },
+                    { "type":  "number", "answer":  2.1 },
+                    { "type":  "text", "answer":  "row2" }
+                  ]
+                }
+              ]
+            },
+            "question_id": 479,
+            "question_order": 16,
+            "question_text": "How would you correctly answer a Table question?"
+          }
+        ],
+        "section_description": "",
+        "section_id": 450,
+        "section_order": 1,
+        "section_title": "PART I: General Information (To be completed by all applicants)"
+      },
+      {
+        "questions": [
+          {
+            "answer_id": null,
+            "answer_text": null,
+            "question_id": 491,
+            "question_order": 1,
+            "question_text": "Details part I"
+          },
+          {
+            "answer_id": null,
+            "answer_text": null,
+            "question_id": 492,
+            "question_order": 2,
+            "question_text": "Details part II"
+          }
+        ],
+        "section_description": "",
+        "section_id": 451,
+        "section_order": 2,
+        "section_title": "PART II: More information"
+      }
+    ],
+    "template_id": 123,
+    "template_title": "Default template",
+    "template_version": "v2"
+  },
+  "dmproadmap_privacy": "public",
+  "dmproadmap_related_identifiers": [
+    {
+      "citation": "Bird, Tweety, Daffy Duck. 2024. “Effects of anvil traps on unsuspecting victims.” [Article]. <i>Scientific Reports</i> 10 (1). <a href=\"https://doi.org/10.98765/s0000-000-00000-1\" target=\"_blank\">https://doi.org/10.98765/s0000-000-00000-1</a>.",
+      "descriptor": "cites",
+      "identifier": "https://doi.org/10.98765/s0000-000-00000-1",
+      "type": "doi",
+      "work_type": "article"
+    },
+    {
+      "citation": "Runner, Road, and Tweety Bird. 2025. “Microchemistry of Acme anvils.” [Article]. California Digital Library. <a href=\"https://doi.org/10.00000/0000-0000\" target=\"_blank\">https://doi.org/10.00000/0000-0000</a>.",
+      "descriptor": "is_referenced_by",
+      "identifier": "https://doi.org/10.00000/0000-0000",
+      "type": "doi",
+      "work_type": "dataset"
+    },
+    {
+      "descriptor": "cites",
+      "identifier": "https://figshare.com/articles/dataset/Acme-anvil-compositions/1345345354.pdf",
+      "type": "url",
+      "work_type": "dataset"
+    }
+  ],
+  "dmp_id": {
+    "identifier": "https://doi.org/10.12345/A1B2C3",
+    "type": "doi"
+  },
+  "ethical_issues_description": "",
+  "ethical_issues_exist": "no",
+  "ethical_issues_report": "",
+  "language": "eng",
+  "modified": "2026-08-11T15:50:37Z",
+  "project": [
+    {
+      "description": "<p>Examination of anvil rated injuries in Looney Tunes cartoon episodes.</p>",
+      "end": "2025-08-05T00:00:00Z",
+      "funding": [
+        {
+          "funder_id": {
+            "identifier": "https://ror.org/01cwqze88",
+            "type": "ror"
+          },
+          "funding_status": "planned",
+          "name": "National Institutes of Health"
+        }
+      ],
+      "start": "2025-08-12T00:00:00Z",
+      "title": "Acme Anvil Accidents - A study in cartoon violence"
+    }
+  ],
+  "registered": "2025-08-08T19:06:04Z",
+  "title": "Acme Anvil Accidents - A study in cartoon violence"
+}
