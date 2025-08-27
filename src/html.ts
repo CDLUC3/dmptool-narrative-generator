@@ -1,0 +1,498 @@
+import Handlebars from "handlebars";
+import pluralize from "pluralize";
+import { formatDate, safeNumber } from "./helper";
+import {
+  DisplayOptionsInterface,
+  FontInterface,
+  MarginInterface,
+} from "./server";
+import {
+  AffiliationSearchAnswerType,
+  AnswerSchemaMap,
+  AnyAnswerType,
+  DateAnswerType,
+  DateRangeAnswerType,
+  NumberRangeAnswerType,
+  TableAnswerType,
+  TextAreaAnswerType
+} from "@dmptool/types";
+
+function safeYesNoUnknown(value: string): string {
+  switch (value?.toLowerCase()) {
+    case "yes":
+      return "Yes";
+    case "no":
+      return "No";
+    default:
+      return "Unknown";
+  }
+}
+
+// ---------------- Format an Answer as HTML ----------------
+function answerToHTML (json: AnyAnswerType): string {
+  let out: string = "<p>Not yet answered.</p>";
+
+  // If the answer isn't a known type skip it
+  if (!Object.keys(AnswerSchemaMap).includes(json['type'])) {
+    return "<p>Unable to render this answer (unknown type).</p>";
+  }
+
+  // Validate the json against the Zod schema and if invalid skip it
+  const result = AnswerSchemaMap[json['type']]?.safeParse(json);
+  if (result && !result.success) {
+    return "<p>Unable to render this answer (invalid answer).</p>";
+  }
+
+  if (json?.answer || json.type === "boolean") {
+    switch (json.type as string) {
+      case "textArea":
+        out = json.answer as TextAreaAnswerType["answer"];
+        break;
+
+      case "checkBoxes":
+      case "multiselectBox":
+        if (Array.isArray(json.answer) && json.answer.length > 0) {
+          const answers = json.answer.map((answer) => `<li>${answer}</li>`);
+          out = `<ul>${answers.join("")}</ul>`;
+        }
+        break;
+
+      case "dateRange":
+        const drAnswer = json.answer as DateRangeAnswerType["answer"];
+        out = `<p>${formatDate(drAnswer.start)} to ${formatDate(drAnswer.end)}</p>`;
+        break;
+
+      case "numberRange":
+        const nrAnswer = json.answer as NumberRangeAnswerType["answer"];
+        out = `<p>${nrAnswer?.start} to ${nrAnswer?.end}</p>`;
+        break;
+
+      case "table":
+        const tblAnswer = json as TableAnswerType;
+        const cols = tblAnswer.columnHeadings;
+        const rows = tblAnswer.answer;
+        let table = "<table>";
+
+        if (cols) {
+          // Add all of the column headings
+          const ths = cols.map((th) => `<th>${th}</th>`).join("");
+          table += `<tr>${ths}</tr>`;
+        }
+
+        // Loop through all the rows
+        table += rows.map(row => {
+          // Loop through each column and convert the entry to HTML based on its type
+          const tds = row.columns.map((td) => {
+            const tdAnswer = td as AnyAnswerType;
+            `<td>${answerToHTML(tdAnswer)}</td>`;
+          }).join("");
+
+          return `<tr>${tds}</tr>`;
+        }).join("");
+
+        out = `<table>${table}</table>`;
+        break;
+
+      case "date":
+        const dtAnswer = json.answer as DateAnswerType["answer"];
+        out = `<p>${formatDate(dtAnswer)}</p>`;
+        break;
+
+      case "currency":
+        out = `<p>$${json.answer.toLocaleString('en-US')}</p>`;
+        break;
+
+      case "number":
+        out = `<p>${json.answer.toLocaleString('en-US')}</p>`;
+        break;
+
+      case "boolean":
+        out = json.answer ? "<p>Yes</p>" : "<p>No</p>";
+        break;
+
+      case "affiliationSearch":
+        const data = json.answer as AffiliationSearchAnswerType["answer"];
+        if (data?.affiliationId) {
+          out = `<p><a href="${data.affiliationId}" target="_blank">${data.affiliationName ?? data.affiliationId}</a></p>`;
+        } else {
+          out = `<p>${data.affiliationName}</p>`;
+        }
+        break;
+
+      case "url":
+        out = `<p><a href="${json.answer}" target="_blank">${json.answer}</a></p>`;
+        break;
+
+      case "email":
+        out = `<p><a href="mailto:${json.answer}">${json.answer}</a></p>`;
+        break;
+
+      default:
+        // A text type field, so wrap it in a paragraph
+        out = `<p>${json.answer}</p>`;
+        break;
+    }
+  }
+  return out;
+}
+
+// ---------------- Related works for a specific type ----------------
+function workTypeForDisplay(workType: string, pluralizeIt: boolean = true): string {
+  // Capitalize the type name and replace underscores with spaces
+  let typeLabel = workType.replace(/_/g, " ");
+  typeLabel = pluralizeIt ? pluralize(typeLabel) : typeLabel;
+  return `${typeLabel[0].toUpperCase()}${typeLabel.slice(1)}`;
+}
+
+function relatedWorksForType(workType: string, works: any[]): string {
+  const out: string[] = works.filter((work: any) => work.work_type.includes(workType))
+    .map((work: any) => {
+      return work?.citation ? work.citation : `<a href="${work.identifier}" target="_blank">${work.identifier}</a>`;
+    });
+
+  return out.length === 0 ? null : out.map((work) => `<li>${work}</li>`).join("");
+}
+
+// ---------------- Format ISO dates ----------------
+Handlebars.registerHelper("formatDate", formatDate);
+
+// ---------------- Remove protocol and domains from URLs ----------------
+Handlebars.registerHelper("doiForDisplay", function (doi: string): string {
+  return doi.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, "");
+});
+
+Handlebars.registerHelper("orcidForDisplay", function (orcid: string): string {
+  return orcid.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "");
+});
+
+// ---------------- Group contributors by role ----------------
+Handlebars.registerHelper("contributorsForRole", function(role: string, contributors: any[]): any {
+  if (!Array.isArray(contributors) || contributors.length < 1) return [];
+
+  const out: string[] = contributors.filter((contributor: any) => contributor.role.includes(role))
+    .map((contributor: any) => {
+        return contributor?.contributor_id?.identifier ? `<a href="${contributor.contributor_id.identifier}" target="_blank">${contributor.name}</a>` : contributor.name;
+    });
+
+  return out.length === 0 ? "None specified" : out.join("; ");
+});
+
+// ---------------- Group related works by type ----------------
+Handlebars.registerHelper("relatedWorksByType", function(works: any[]): string {
+  if (!Array.isArray(works) || works.length < 1) return "";
+
+  const workTypes: string[] = works.map((work: any) => work.work_type).flat();
+
+  const out: string[] = [];
+  // Loop through each unique work type and collect all the citations
+  for(const workType of [...new Set(workTypes)]) {
+    const worksForType = relatedWorksForType(workType, works);
+
+    if (worksForType) {
+      out.push(`<li><strong>${workTypeForDisplay(workType)}</strong><ul>${worksForType}</ul></li>`);
+    }
+  }
+  return out.length === 0 ? "None specified" : `<ul>${out.join("")}</ul>`;
+});
+
+// ---------------- Research Outputs Table ----------------
+Handlebars.registerHelper("researchOutputsAsTable", function(outputs: any[]): string {
+  if (!Array.isArray(outputs) || outputs.length < 1) return "";
+
+  let hasDistributions = false;
+  const standardTHs: string[] = [
+      "<th>Title</th>",
+      "<th>Type</th>",
+      "<th>Anticipated release date</th>",
+      "<th>Metadata standard(s)</th>",
+      "<th>May contain sensitive data?</th>",
+      "<th>May contain PII?]</th>"
+  ];
+
+  const distrubtionTHs: string[] = [
+    "<th>Initial access level</th>",
+    "<th>Intended repository(ies)</th>",
+    "<th>Anticipated file size</th>",
+    "<th>License</th>",
+  ]
+
+  const trs: string[] = outputs.map((output: any) => {
+    const standards = Array.isArray(output.metadata) ? output.metadata.map((ms) => `<a href="${ms.metadata_standard_id.identifier}" target="_blank">${ms.metadata_standard_id.identifier}</a>`) : [];
+
+    const distributions = Array.isArray(output.distribution) ? output.distribution : [];
+    let distributionTds = [];
+
+    if (distributions.length > 1) {
+      hasDistributions = true;
+      // There are many distributions, so use bulleted lists
+      const accessLevels = distributions.map((d) => {
+        return `<li>${d.data_access ? `${d.data_access[0]}${d.data_access.slice(1)}` : 'Unspecified'}</li>`
+      });
+      const repos = distributions.map((d) => {
+        return `<li>${d.host ? `<a href="${d.host.url}" target="_blank">${d.host.title}</a>` : 'Unspecified'}</li>`
+      });
+      const sizes = distributions.map((d) => {
+        return `<li>${safeNumber(d.byte_size, 0)} bytes</li>`
+      });
+      const licenses = distributions.map((d) => {
+        return `<li>${d.license?.license_ref ? `<a href="${d.license?.license_ref}" target="_blank">${d.license?.license_ref}</a>` : 'Unspecified'}</li>`
+      });
+
+      distributionTds = [
+        `<td><ul>${accessLevels}</ul></td>`,
+        `<td><ul>${repos}</ul></td>`,
+        `<td><ul>${sizes}</ul></td>`,
+        `<td><ul>${licenses}</ul></td>`,
+      ];
+    } else if (distributions.length === 1) {
+      // There's only one distribution so no need to use a bulleted list
+      distributionTds = [
+        `<td>${distributions[0].data_access ? `${output.distribution[0].data_access[0]}${output.distribution[0].data_access.slice(1)}` : 'Unspecified'}</td>`,
+        `<td>${distributions[0].host ? `<a href="${output.distribution[0].host.url}" target="_blank">${output.distribution[0].host.title}</a>` : 'Unspecified'}</td>`,
+        `<td>${safeNumber(distributions[0].byte_size, 0)} bytes</td>`,
+        `<td>${distributions[0].license?.license_ref ? `<a href="${output.distribution[0].license?.license_ref}" target="_blank">${output.distribution[0].license?.license_ref}</a>` : 'Unspecified'}</td>`,
+      ];
+    }
+
+    return [
+      `<td>${output.title}</td>`,
+      `<td>${workTypeForDisplay(output.type, false)}</td>`,
+      `<td>${output.issued ? formatDate(output.issued) : "Unknown"}</td>`,
+      `<td>${standards.length > 1 ? `<ul>${standards.map((s) => `<li>${s}</li>`)}</ul>` : standards[0] ?? "Unknown"}</td>`,
+      `<td>${safeYesNoUnknown(output?.sensitive_data)}</td>`,
+      `<td>${safeYesNoUnknown(output?.personal_data)}</td>`,
+      ...distributionTds,
+    ].join("")
+  });
+
+  const ths = hasDistributions ? standardTHs.concat(distrubtionTHs) : standardTHs;
+  return `<table><tr>${ths.join("")}</tr>${trs.map((tr) => `<tr>${tr}</tr>`).join("")}</table>`;
+});
+
+// ---------------- Funder and Project helpers ----------------
+Handlebars.registerHelper("funders", function(project: any): string {
+  let funding = project.map((project) => project.funding).flat();
+  funding = funding.filter((fund: any) => fund !== null && fund !== undefined);
+  return funding.map((fund: any) => {
+    return fund?.funder_id?.identifier ? `<a href="${fund.funder_id.identifier}" target="_blank">${fund.name}</a>` : fund.name;
+  }).join("; ");
+});
+
+Handlebars.registerHelper("displayProjectStartDate", function(project: any): string {
+  const dates: string[] = project.map((project) => formatDate(project.start, false)).flat();
+  return dates.length === 0 ? "None specified" : dates.sort()[0];
+});
+
+Handlebars.registerHelper("displayProjectEndDate", function (project: any): string {
+  const dates: string[] = project.map((project) => formatDate(project.end, false)).flat();
+  return dates.length === 0 ? "None specified" : dates.sort()[dates.length - 1];
+});
+
+// ---------------- Answer helpers ----------------
+Handlebars.registerHelper("formatAnswer", function (json: any): string {
+  return answerToHTML(json);
+});
+
+// ---------------- Render the full HTML doc ----------------
+export function renderHTML(
+  display: DisplayOptionsInterface,
+  margin: MarginInterface,
+  font: FontInterface,
+  data: any // TODO: Set this to the common standard once we add it to @dmptool/types
+): string {
+  const template = Handlebars.compile(`
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>{{title}}</title>
+      <style>
+        @page {
+          margin-top: ${margin?.marginTop}px;
+          margin-right: ${margin?.marginRight}px;
+          margin-bottom: ${margin?.marginBottom}px;
+          margin-left: ${margin?.marginLeft}px;
+        }
+        body {
+          font-family: ${font?.fontFamily};
+          font-size: ${font?.fontSize};
+          line-height: ${font?.lineHeight}%;
+        }
+        .break-after {
+          page-break-after: always;
+        }
+        .break-before {
+          page-break-before: always;
+        }
+        h1 {
+          font-size: 1.4em;
+        }
+        h2 {
+          font-size: 1.3em;
+        }
+        h3 {
+          font-size: 1.2em;
+        }
+        div.cover-page p {
+          margin-left: 10px;
+          margin-bottom: 35px;
+        }
+        div.section {
+          margin-bottom: 35px;
+        }
+        div.question {
+          margin-bottom: 25px;
+        }
+        div.question h4 {
+          font-size: 1.1em;
+          font-weight: bold;
+        }
+        div.question p {
+          margin-left: 15px;
+        }
+        table, tr, td, th, tbody, thead, tfoot {
+          page-break-inside: avoid !important;
+        }
+        table {
+          border-collapse: collapse;
+        }
+        table caption {
+          font-weight: bold;
+          font-size: 1.1em;
+          text-align: left;
+        }
+        th, td {
+          border: 1px solid black !important;
+          padding: 2px;
+        }
+        .annotations {
+          margin-left: 15px;
+          margin-bottom: 10px;
+        }
+        ul.research_output {
+          margin-bottom: 15px;
+        }
+        ul.research_output li {
+          margin-bottom: 5px;
+        }
+        ul.research_output li strong {
+          padding-right: 5px;
+        }
+      </style>
+    </head>
+    <body>
+      {{#if ${display.includeCoverPage}}}
+        <h1>{{title}}</h1>
+        <hr>
+        <h2>Plan Overview</h2>
+        <div class="cover-page">
+          <p class="header">
+            <em>A Data Management Plan created using the DMP Tool</em>
+          </p>
+          <p>
+            <b>DMP ID:</b>
+            <a href="{{dmp_id.identifier}}" target="_blank">{{doiForDisplay dmp_id.identifier}}</a>
+          </p>
+          <p>
+            <b>Title: </b>{{title}}
+          </p>
+          <p>
+            <strong>Creator:</strong> {{contact.name}} - <strong>ORCID:</strong> <a href="{{contact.contact_id.identifier}}" target="_blank">{{orcidForDisplay contact.contact_id.identifier}}</a>
+          </p>
+          <p>
+            <b>Affiliation: </b><a href="{{contact.dmproadmap_affiliation.affiliation_id.identifier}}" target="_blank">{{contact.dmproadmap_affiliation.name}}</a>
+          </p>
+          <p>
+            <b>Principal Investigator: </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/investigation" contributor}}}
+          </p>
+          <p>
+            <b>Data Manager: </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/data-curation" contributor}}}
+          </p>
+          <p>
+            <b>Funder: </b>{{{funders project}}}
+          </p>
+          <p>
+            <b>DMP Tool Template: </b>{{dmproadmap_template.title}}
+          </p>
+          <p>
+            <b>Project abstract: </b>
+            <div style="margin-left: 15px;">
+              <p>{{{description}}}</p>
+            </div>
+          </p>
+          <p>
+            <b>Start date: </b>{{displayProjectStartDate project}}
+          </p>
+          <p>
+            <b>End date: </b>{{displayProjectEndDate project}}
+          </p>
+          <p>
+            <b>Last modified: </b>{{formatDate modified}}
+          </p>
+        </div>
+        <hr class="bottom" />
+      {{/if}}
+
+      <div style="page-break-before:always;"></div>
+      <h1>{{title}}</h1>
+      <hr>
+
+      {{#if dmproadmap_narrative.sections}}
+        {{#each dmproadmap_narrative.sections}}
+          <div class="section">
+            {{#if ${display.includeSectionHeadings}}}
+              <h3>{{section_title}}</h3>
+              {{#if section_description}}
+                <p>{{{section_description}}}</p>
+              {{/if}}
+            {{/if}}
+            {{#if questions}}
+              {{#each questions}}
+                <div class="question">
+                  {{#if ${display.includeQuestionText}}}
+                    <h4>{{{question_text}}}</h4>
+                  {{/if}}
+                  {{#if answer_json}}
+                    {{{formatAnswer answer_json}}}
+                  {{else if ${display.includeUnansweredQuestions}}}
+                    <p>Not answered</p>
+                  {{/if}}
+                </div>
+              {{/each}}
+              </p>
+            {{/if}}
+          </div>
+        {{/each}}
+      {{/if}}
+      <hr class="bottom" />
+
+      {{#if ${display.includeResearchOutputs}}}
+        {{#if dataset}}
+          <div style="page-break-before:always;"></div>
+          <h2>Planned Research Outputs</h2>
+
+          {{#each dataset}}
+            <h3>{{title}}</h3>
+            <p>{{{description}}}</p>
+          {{/each}}
+
+          {{{researchOutputsAsTable dataset}}}
+
+          <hr class="bottom" />
+        {{/if}}
+      {{/if}}
+
+      {{#if ${display.includeRelatedWorks}}}
+        {{#if dmproadmap_related_identifiers}}
+          <div style="page-break-before:always;"></div>
+          <h2>Related Works</h2>
+
+          {{{relatedWorksByType dmproadmap_related_identifiers}}}
+
+          <hr class="bottom" />
+        {{/if}}
+      {{/if}}
+    </body>
+  </html>
+  `);
+  return template(data);
+}

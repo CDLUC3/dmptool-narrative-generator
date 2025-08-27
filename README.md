@@ -1,7 +1,13 @@
 # dmptool-narrative-generator
-Service that takes in a DMP as JSON and renders the narrative in the requested format.
+Service that generates a narrative document for a DMP in various formats. 
 
-The DMP JSON should be in the RDA Common Standard format with DMP Tool extensions.
+The structure of a request should follow this format: 
+- **PATH**: `GET dmps/{:dmpId}/narrative`
+- **ACCEPT HEADER**: `application/pdf` (or one of the supported formats listed below)
+- **AUTH COOKIE** `dmspt` (optional auth token)
+- **AUTH HEADER** (_COMING SOON_): `Bearer my_token` (optional auth token)
+
+A narrative for any `public` DMP can be generated without an authentication cookie/header. All other DMPs require you to provide an authentication token.
 
 ## Supported Formats
 
@@ -12,9 +18,11 @@ The service supports the following output formats:
 - **PDF** `Accept: application/pdf` A PDF representation (required by most funders) [example](https://dmptool.org/plans/51258/export.pdf?export%5Bpub%5D=true&export%5Bquestion_headings%5D=true)
 - **TEXT** `Accept: text/plain` A plain text version [example]()
 
-## Options
+## Query parameters
 
 The service supports the following query params which may be passed to help control the styling and what portions to display.
+- Specific DMP version
+  - **version** A UTC ISO8601 formatted date (e.g. `2025-08-26T10:43:12Z`) (if omitted, the latest version of the DMP will be returned) 
 - Display (all default to true) (each can accept `true/false`, `yes/no` or `0/1`):
   - **includeCoverPage** Whether the overview page should be included (N/A for CSV)
   - **includeSectionHeadings** Whether the template section titles and descriptions should be included
@@ -33,49 +41,68 @@ The service supports the following query params which may be passed to help cont
   - **marginTop** The bottom page margin (default is `76px`)
 
 ## Usage
-Example with query params:
+
+Note that you must have the application running using `npm run dev` for the following examples to work.
+
+Example with query parameters to adjust formatting:
 ```shell
-curl -X POST "http://localhost:3030/generate?fontSize=14&includeCoverPage=no" \
--H "Content-Type: application/json" \
--H "Accept: text/html" \
---data-ascii @src/__mocks__/full-dmp.json \
---output tmp/report-full-dmp.html
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?fontSize=13&marginLeft=5&includeCoverPage=false" \
+-H "Accept: text/html" 
+--output tmp/test.html
+```
+
+Example of fetching a historical version of a DMP:
+```shell
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+-H "Accept: text/html"  
+--output tmp/test.html
+```
+
+Example with Auth token as cookie:
+```shell
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative" \
+-H "Accept: text/html" 
+-b "dmspt=my-cookie"  
+--output tmp/test.html
 ```
 
 Examples for each format type:
 ```shell
 # CSV
-curl -X POST http://localhost:3030/generate \
--H "Content-Type: application/json" \
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/csv" \
---data-ascii @src/__mocks__/full-dmp.json \
 --output tmp/report-full-dmp.csv
 
 # DOCX
-curl -X POST http://localhost:3030/generate \
--H "Content-Type: application/json" \
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
---data-ascii @src/__mocks__/full-dmp.json \
 --output tmp/report-full-dmp.docx
 
 # HTML
-curl -X POST http://localhost:3030/generate \
--H "Content-Type: application/json" 
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/html" 
---data-ascii @src/__mocks__/full-dmp.json \
 --output tmp/report-full-dmp.html  
 
 # PDF
-curl -X POST http://localhost:3030/generate \
--H "Content-Type: application/json" \
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: application/pdf" \
---data-ascii @src/__mocks__/full-dmp.json \
 --output tmp/report-full-dmp.pdf
 
 # TEXT
-curl -X POST http://localhost:3030/generate \
--H "Content-Type: application/json" \
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/plain" \
---data-ascii @src/__mocks__/full-dmp.json \
 --output tmp/report-full-dmp.txt
 ```
+
+## Development
+
+To run this service locally, you must: 
+- Have the [DMP Tool UI](https://github.com/CDLUC3/dmsp_frontend_prototype) docker environment running on your local machine. This service will allow you to login (obtain an auth cookie) and create/update DMP data which can then be used to generate narratives.
+- Have the [DMP Tool Apollo server](https://github.com/CDLUC3/dmsp_backend_prototype) docker environment running on your local machine. This service has a local DynamoDB Table with DMP records available for query.
+- Run `npm install` and then `npm run dev`
+- Send queries to the local service at `http://localhost:3030/dmps/{dmpId}/narrative`
+
+## Testing
+
+To run the linter checks you should run `npm run lint`
+To run the tests you should run `npm run test`
