@@ -33,11 +33,8 @@ phases:
       - echo "Running in ${NODE_ENV} - started on `date`"
       - cd $CODEBUILD_SRC_DIR
 
-      # Ensure we're running in CI mode nd that it always installs the devDependencies for our tests
-      - echo "production=true" >> .npmrc
-
       # Build the app
-      - npm build
+      - npm run build
 
       # Build the Docker image
       - echo Building the Docker image...

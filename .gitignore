@@ -10,3 +10,6 @@ node_modules/
 
 # Skip test files
 tmp/*.*
+
+# Ignore the built service
+dist/
