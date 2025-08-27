@@ -9,6 +9,8 @@ The structure of a request should follow this format:
 
 A narrative for any `public` DMP can be generated without an authentication cookie/header. All other DMPs require you to provide an authentication token.
 
+The service can also respond to health checks on `/narrative-health`
+
 ## Supported Formats
 
 The service supports the following output formats:

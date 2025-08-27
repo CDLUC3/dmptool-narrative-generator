@@ -246,7 +246,7 @@ app.get("/dmps/{*splat}/narrative", auth, async (req: Request, res: Response) =>
 });
 
 // ----------------- ALB Healthcheck -----------------
-app.get("/health", (_: Request, res: Response) => res.send("ok"));
+app.get("/narrative-health", (_: Request, res: Response) => res.send("ok"));
 
 // ----------------- Startup the server  -----------------
 // only start listening if this file is run directly
