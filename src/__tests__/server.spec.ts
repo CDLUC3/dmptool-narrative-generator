@@ -73,7 +73,7 @@ describe("server endpoints", () => {
   });
 
   it("health endpoint returns ok", async () => {
-    const res = await request(app).get("/health");
+    const res = await request(app).get("/narrative-health");
     expect(res.status).toBe(200);
     expect(res.text).toBe("ok");
   });

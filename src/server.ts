@@ -143,7 +143,7 @@ app.use(cookieParser());
 // Matches patterns like:
 //   /dmps/11.11111/A1B2C3/narrative
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
-app.get("/dmps/{*splat}/narrative.:ext?", auth, async (req: Request, res: Response) => {
+app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Response) => {
   // Generate a unique requestId that we can use to tie log messages together
   const requestId: string = [...Array(12)].map(() => {
     return Math.floor(Math.random() * 16).toString(16)
