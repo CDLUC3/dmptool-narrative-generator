@@ -143,14 +143,40 @@ app.use(cookieParser());
 // Matches patterns like:
 //   /dmps/11.11111/A1B2C3/narrative
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
-app.get("/dmps/{*splat}/narrative", auth, async (req: Request, res: Response) => {
+app.get("/dmps/{*splat}/narrative.:ext?", auth, async (req: Request, res: Response) => {
   // Generate a unique requestId that we can use to tie log messages together
   const requestId: string = [...Array(12)].map(() => {
     return Math.floor(Math.random() * 16).toString(16)
   }).join('');
 
-  // Get the format the user wants the narrative document in
-  const accept = req.headers["accept"] || PDF_TYPE;
+  // Get the format the user wants the narrative document in from either
+  // the specified file extension OR the Accept header
+  let accept: string;
+  if (req.params.ext) {
+    // Map extension to mime type
+    switch (req.params.ext.toLowerCase()) {
+      case "csv":
+        accept = CSV_TYPE;
+        break;
+      case "docx":
+        accept = DOCX_TYPE;
+        break;
+      case "html":
+        accept = HTML_TYPE;
+        break;
+      case "pdf":
+        accept = PDF_TYPE;
+        break;
+      case "txt":
+        accept = TXT_TYPE;
+        break;
+      default:
+        accept = PDF_TYPE; // fallback
+    }
+  } else {
+    accept = req.headers["accept"] || PDF_TYPE;
+  }
+
   // Get the query params or use defaults
   const { version, display, margin, font } = prepareOptions(req.query);
   // Get the JWT if there is one
@@ -180,16 +206,6 @@ app.get("/dmps/{*splat}/narrative", auth, async (req: Request, res: Response) =>
       allowedDMPs: token?.dmpIds ?? []
     }),
     `Received request for DMP narrative`
-  );
-
-  requestLogger.debug(
-    prepareObjectForLogs({
-      secret: process.env.JWT_SECRET,
-      cookies: req.cookies,
-      dmsptCookie: req.cookies?.dmspt,
-      decoded: jwt.decode(req.cookies?.dmspt),
-    }),
-    `JWT inspection`
   );
 
   try {
