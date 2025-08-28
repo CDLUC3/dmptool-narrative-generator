@@ -73,4 +73,4 @@ USER pptruser
 # Expose API port
 EXPOSE 4030
 
-CMD ["node", "server.js"]
+CMD ["node", "dist/server.js"]
