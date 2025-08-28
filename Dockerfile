@@ -1,7 +1,21 @@
-# Use an official Node image with Debian/Ubuntu (needed for Chrome deps)
-FROM node:20-slim
+# Stage 1: Builder
+FROM node:20 AS builder
 
-# Install dependencies for Chromium
+WORKDIR /app
+
+# Install all deps including devDependencies so we can compile TS
+COPY package*.json ./
+RUN npm ci
+
+# Copy source code and build
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build   # should output to dist/
+
+# Stage 2: Production Image
+FROM node:20-slim AS runner
+
+# Install Chromium and its dependencies for Puppeteer to generate HTML and PDF
 RUN apt-get update \
     && apt-get install -y \
       wget \
@@ -38,15 +52,14 @@ RUN apt-get update \
       xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Install deps first
+# Copy package.json & install only prod dependencies
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
-# Copy source
-COPY . .
+# Copy compiled dist code from builder
+COPY --from=builder /app/dist ./dist
 
 # Run as non-root user for safety
 RUN useradd -m pptruser \
@@ -54,6 +67,6 @@ RUN useradd -m pptruser \
 USER pptruser
 
 # Expose API port
-EXPOSE 3000
+EXPOSE 4030
 
 CMD ["node", "server.js"]
