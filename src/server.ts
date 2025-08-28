@@ -11,6 +11,7 @@ import { initLogger, logger, prepareObjectForLogs } from "./logger";
 import { safeNumber, safeBoolean, pointsToFontSize } from "./helper";
 import { expressjwt, Request } from "express-jwt";
 import { getDMP } from "./dynamo";
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -177,6 +178,16 @@ app.get("/dmps/{*splat}/narrative", auth, async (req: Request, res: Response) =>
       allowedDMPs: token?.dmpIds ?? []
     }),
     `Received request for DMP narrative`
+  );
+
+  requestLogger.debug(
+    prepareObjectForLogs({
+      secret: process.env.JWT_SECRET,
+      cookies: req.cookies,
+      dmsptCookie: req.cookies?.dmspt,
+      decoded: jwt.decode(req.cookies?.dmspt),
+    }),
+    `JWT inspection`
   );
 
   try {
