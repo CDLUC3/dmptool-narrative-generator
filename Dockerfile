@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM node:20 AS builder
+FROM public.ecr.aws/docker/library/node:24.7.0-alpine3.22 AS builder
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ COPY src ./src
 RUN npm run build   # should output to dist/
 
 # Stage 2: Production Image
-FROM node:20-slim AS runner
+FROM public.ecr.aws/docker/library/node:24.7.0-slim AS runner
 
 # Install Chromium and its dependencies for Puppeteer to generate HTML and PDF
 RUN apt-get update \
