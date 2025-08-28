@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import { Logger } from 'pino';
 import express, { Response } from "express";
 import { JwtPayload } from 'jsonwebtoken';
+import cookieParser from "cookie-parser";
 import { renderCSV } from "./csv";
 import { renderHTML } from "./html";
 import { renderPDF } from "./pdf";
@@ -136,6 +137,7 @@ function hasPermissionToDownloadNarrative(data: any, token: JWTAccessToken | nul
 // ----------------- Initialize the server  -----------------
 const app = express();
 app.use(express.json({ limit: "5mb" }));
+app.use(cookieParser());
 
 // ----------------- Main entrypoint to fetch a DMP narrative  -----------------
 // Matches patterns like:
