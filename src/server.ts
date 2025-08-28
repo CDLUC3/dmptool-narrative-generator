@@ -167,7 +167,15 @@ app.get("/dmps/{*splat}/narrative", auth, async (req: Request, res: Response) =>
   );
 
   requestLogger.info(
-    prepareObjectForLogs({ dmpId, version, format: accept, display, margin, font }),
+    prepareObjectForLogs({
+      dmpId,
+      version,
+      format: accept,
+      display,
+      margin,
+      font,
+      allowedDMPs: token?.dmpIds ?? []
+    }),
     `Received request for DMP narrative`
   );
 
