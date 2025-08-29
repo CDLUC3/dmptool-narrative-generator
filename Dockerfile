@@ -59,15 +59,14 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 
 # Create non-root user and group in Debian slim
-RUN groupadd -r pptrgroup && useradd -r -g pptrgroup -m pptruser \
-    && chown -R pptruser:pptrgroup /app
+# RUN groupadd -r pptrgroup && useradd -r -g pptrgroup -m pptruser \
+#     && chown -R pptruser:pptrgroup /app
 
-USER pptruser
+# USER pptruser
 
 # Puppeteer-managed Chrome
 RUN npx puppeteer browsers install chrome
-RUN ln -s /home/pptruser/.cache/puppeteer/chrome/linux_arm-*/chrome-linux64/chrome /bin/chrome
-ENV PUPPETEER_EXECUTABLE_PATH=/bin/chrome
+ENV PUPPETEER_EXECUTABLE_PATH=/root/.cache/puppeteer/chrome-headless-shell/linux_arm-*/chrome-headless-shell-linux64/chrome-headless-shell
 
 # Expose API port
 EXPOSE 4030
