@@ -61,14 +61,15 @@ jest.mock("express-jwt", () => {
 });
 
 describe("server endpoints", () => {
+  let payload = {
+    dmp_id: { identifier: "d1" },
+    title: "Test DMP",
+    dmproadmap_privacy: "public"
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    (getDMP as jest.Mock).mockResolvedValue({
-      dmp_id: { identifier: "d1" },
-      title: "Test DMP",
-      dmproadmap_privacy: "public"
-    });
-
+    (getDMP as jest.Mock).mockResolvedValue(payload);
     fakeToken = undefined;
   });
 
@@ -78,11 +79,11 @@ describe("server endpoints", () => {
     expect(res.text).toBe("ok");
   });
 
-  it("defaults to PDF when no Accept header is provided", async () => {
+  it("defaults to JSON when no Accept header is provided", async () => {
     const res = await request(app).get("/dmps/foo/narrative");
-    expect(renderHTML).toHaveBeenCalled();
-    expect(renderPDF).toHaveBeenCalled();
-    expect(res.header["content-type"]).toContain("application/pdf");
+    expect(getDMP).toHaveBeenCalled();
+    expect(renderHTML).not.toHaveBeenCalled();
+    expect(res.header["content-type"]).toContain("application/json");
   });
 
   it("applies query params via prepareOptions indirectly", async () => {
@@ -99,7 +100,7 @@ describe("server endpoints", () => {
     expect(res.status).toBe(200);
   });
 
-  it("returns CSV", async () => {
+  it("returns CSV via accept header", async () => {
     const res = await request(app)
       .get("/dmps/foo/narrative")
       .set("Accept", "text/csv");
@@ -108,7 +109,15 @@ describe("server endpoints", () => {
     expect(res.text).toBe("csv-data");
   });
 
-  it("returns DOCX", async () => {
+  it("returns CSV via extension", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative.csv");
+    expect(renderCSV).toHaveBeenCalled();
+    expect(res.type).toMatch(/csv/);
+    expect(res.text).toBe("csv-data");
+  });
+
+  it("returns DOCX via accept header", async () => {
     const res = await request(app)
       .get("/dmps/foo/narrative")
       .set("Accept", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
@@ -116,7 +125,14 @@ describe("server endpoints", () => {
     expect(res.header["content-type"]).toContain("application/vnd.openxmlformats");
   });
 
-  it("returns HTML", async () => {
+  it("returns DOCX via extension", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative.docx");
+    expect(renderDOCX).toHaveBeenCalled();
+    expect(res.header["content-type"]).toContain("application/vnd.openxmlformats");
+  });
+
+  it("returns HTML via accept header", async () => {
     const res = await request(app)
       .get("/dmps/foo/narrative")
       .set("Accept", "text/html");
@@ -125,10 +141,45 @@ describe("server endpoints", () => {
     expect(res.text).toContain("<html>");
   });
 
-  it("returns TXT", async () => {
+  it("returns HTML via extension", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative.html");
+    expect(renderHTML).toHaveBeenCalled();
+    expect(res.type).toMatch(/html/);
+    expect(res.text).toContain("<html>");
+  });
+
+  it("returns JSON via accept header", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative")
+      .set("Accept", "application/json");
+    expect(renderHTML).not.toHaveBeenCalled();
+    expect(res.type).toMatch(/json/);
+    const expected = JSON.stringify(payload);
+    expect(res.text).toContain(expected);
+  });
+
+  it("returns JSON via extension", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative.json");
+    expect(renderHTML).not.toHaveBeenCalled();
+    expect(res.type).toMatch(/json/);
+    const expected = JSON.stringify(payload);
+    expect(res.text).toContain(expected);
+  });
+
+  it("returns TXT via accept header", async () => {
     const res = await request(app)
       .get("/dmps/foo/narrative")
       .set("Accept", "text/plain");
+    expect(renderTXT).toHaveBeenCalled();
+    expect(res.type).toMatch(/plain/);
+    expect(res.text).toBe("txt-data");
+  });
+
+  it("returns TXT via extension", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative.txt");
     expect(renderTXT).toHaveBeenCalled();
     expect(res.type).toMatch(/plain/);
     expect(res.text).toBe("txt-data");

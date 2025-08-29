@@ -265,7 +265,8 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
           return;
 
         case TXT_TYPE:
-          const txt = await renderTXT(html);
+          // Render the HTML first which is then used to render the TXT
+          const txt = await renderTXT(renderHTML(display, margin, font, data));
           requestLogger.debug("Generating TXT");
           res.type("txt").send(txt);
           return;
