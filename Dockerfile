@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libxrandr2 \
     xdg-utils \
+  && ln -sf /usr/bin/bash /bin/bash \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
