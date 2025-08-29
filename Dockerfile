@@ -23,6 +23,8 @@ FROM public.ecr.aws/docker/library/node:lts-slim AS runner
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
+    nodejs \
+    npm \
     ca-certificates \
     fonts-freefont-ttf \
     fonts-dejavu \
@@ -45,8 +47,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libxrandr2 \
     xdg-utils \
-  && ln -sf /usr/bin/bash /bin/bash \
   && rm -rf /var/lib/apt/lists/*
+
+# RUN ln -sf /usr/bin/bash /bin/bash
 
 WORKDIR /app
 
