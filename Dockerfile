@@ -71,7 +71,7 @@ RUN addgroup -S pptrgroup && adduser -S pptruser -G pptrgroup \
 USER pptruser
 
 # Install Chrome
-RUN npx puppeteer browsers install chrome-headless-shell
+RUN npx puppeteer browsers install chrome
 
 # Expose API port
 EXPOSE 4030
