@@ -18,40 +18,17 @@ RUN rm -rf dist/__tests__ \
            dist/**/__tests__ \
            dist/**/__mocks__
 
-# Stage 2: Production Image
-FROM public.ecr.aws/docker/library/node:lts-alpine3.22 AS runner
+# Stage 2: Production Image (Chromium)
+FROM public.ecr.aws/z8o9m4l5/selenium/standalone-chrome:4.35.0 AS runner
 
-# Install Chromium and its dependencies for Puppeteer to generate HTML and PDF
+# Install font helpers to support non-ascii characters
 RUN apk add --no-cache \
     bash \
-    chromium \
-    nss \
     freetype \
-    harfbuzz \
     ttf-freefont \
     ttf-dejavu \
     ttf-liberation \
     font-noto-cjk \
-    alsa-lib \
-    cups-libs \
-    dbus-libs \
-    expat \
-    fontconfig \
-    mesa-gbm \
-    glib \
-    pango \
-    libx11 \
-    libxcomposite \
-    libxcursor \
-    libxdamage \
-    libxext \
-    libxfixes \
-    libxi \
-    libxrandr \
-    libxrender \
-    libxscrnsaver \
-    libxtst \
-    xdg-utils \
   && rm -rf /var/cache/apk/*
 
 WORKDIR /app
