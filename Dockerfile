@@ -49,8 +49,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xdg-utils \
   && rm -rf /var/lib/apt/lists/*
 
-# RUN ln -sf /usr/bin/bash /bin/bash
-
 WORKDIR /app
 
 # Copy package.json & install only prod dependencies
