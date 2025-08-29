@@ -14,11 +14,24 @@ The service can also respond to health checks on `/narrative-health`
 ## Supported Formats
 
 The service supports the following output formats:
-- **CSV** `Accept: text/csv` A CSV representation of the DMP (typically the cover page and appendices are excluded) [example]()
-- **DOCX** `Accept: application/vnd.openxmlformats-officedocument.wordprocessingml.document` An editable MS Word compliant version [example]() 
-- **HTML** `Accept: text/html` An html representation [example](https://dmptool.org/plans/51258/export?format=html&export%5Bform%5D=true&phase_id=&export%5Bproject_details%5D=true&export%5Bsection_headings%5D=true&export%5Bquestion_text%5D=true&export%5Bunanswered_questions%5D=true&export%5Bresearch_outputs%5D=true&export%5Brelated_identifiers%5D=true&export%5Bformatting%5D%5Bfont_face%5D=Tinos%2C+serif&export%5Bformatting%5D%5Bfont_size%5D=11&export%5Bformatting%5D%5Bmargin%5D%5Btop%5D=25&export%5Bformatting%5D%5Bmargin%5D%5Bbottom%5D=25&export%5Bformatting%5D%5Bmargin%5D%5Bleft%5D=25&export%5Bformatting%5D%5Bmargin%5D%5Bright%5D=25&button=)
-- **PDF** `Accept: application/pdf` A PDF representation (required by most funders) [example](https://dmptool.org/plans/51258/export.pdf?export%5Bpub%5D=true&export%5Bquestion_headings%5D=true)
+- **CSV** A CSV representation of the DMP (typically the cover page and appendices are excluded) [example]()
+  - As header: `Accept: text/csv`
+  - As extension: `/dmps/{dmpId}/narrative.csv`
+- **DOCX** An editable MS Word compliant version [example]()
+  - As header: `Accept: application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+  - As extension: `/dmps/{dmpId}/narrative.docx`
+- **HTML** An html representation [example](https://dmptool.org/plans/51258/export?format=html&export%5Bform%5D=true&phase_id=&export%5Bproject_details%5D=true&export%5Bsection_headings%5D=true&export%5Bquestion_text%5D=true&export%5Bunanswered_questions%5D=true&export%5Bresearch_outputs%5D=true&export%5Brelated_identifiers%5D=true&export%5Bformatting%5D%5Bfont_face%5D=Tinos%2C+serif&export%5Bformatting%5D%5Bfont_size%5D=11&export%5Bformatting%5D%5Bmargin%5D%5Btop%5D=25&export%5Bformatting%5D%5Bmargin%5D%5Bbottom%5D=25&export%5Bformatting%5D%5Bmargin%5D%5Bleft%5D=25&export%5Bformatting%5D%5Bmargin%5D%5Bright%5D=25&button=)
+  - As header: `Accept: text/html`
+  - As extension: `/dmps/{dmpId}/narrative.html`
+- **JSON** The JSON representation of the DMP
+  - As header: `Accept: application/json`
+  - As extension: `/dmps/{dmpId}/narrative` or `/dmps/{dmpId}/narrative.json` 
+- **PDF** A PDF representation (required by most funders) [example](https://dmptool.org/plans/51258/export.pdf?export%5Bpub%5D=true&export%5Bquestion_headings%5D=true)
+  - As header: `Accept: application/pdf`
+  - As extension: `/dmps/{dmpId}/narrative.pdf`
 - **TEXT** `Accept: text/plain` A plain text version [example]()
+  - As header: `Accept: text/plain`
+  - As extension: `/dmps/{dmpId}/narrative.txt`
 
 ## Query parameters
 
@@ -73,27 +86,32 @@ Examples for each format type:
 # CSV
 curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/csv" \
---output tmp/report-full-dmp.csv
+--output tmp/dmp.csv
 
 # DOCX
 curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
---output tmp/report-full-dmp.docx
+--output tmp/dmp.docx
 
 # HTML
 curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/html" 
---output tmp/report-full-dmp.html  
+--output tmp/dmp.html  
+
+# JSON
+curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+-H "Accept: text/html" 
+--output tmp/dmp.json
 
 # PDF
 curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: application/pdf" \
---output tmp/report-full-dmp.pdf
+--output tmp/dmp.pdf
 
 # TEXT
 curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/plain" \
---output tmp/report-full-dmp.txt
+--output tmp/dmp.txt
 ```
 
 ## Development

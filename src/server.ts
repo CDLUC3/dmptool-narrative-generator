@@ -19,6 +19,7 @@ dotenv.config();
 const CSV_TYPE = "text/csv";
 const DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const HTML_TYPE = "text/html";
+const JSON_TYPE = "application/json";
 const TXT_TYPE = "text/plain";
 const PDF_TYPE = "application/pdf";
 
@@ -171,10 +172,10 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
         accept = TXT_TYPE;
         break;
       default:
-        accept = PDF_TYPE; // fallback
+        accept = JSON_TYPE; // fallback
     }
   } else {
-    accept = req.headers["accept"] || PDF_TYPE;
+    accept = req.headers["accept"] || JSON_TYPE;
   }
 
   // Get the query params or use defaults
@@ -221,9 +222,6 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
     }
 
     if (data && hasPermission) {
-      // Always render the HTML because the majority of the formats use it as a base
-      const html = renderHTML(display, margin, font, data);
-
       switch (accept) {
         case CSV_TYPE:
           const csv = renderCSV(display, data);
@@ -232,7 +230,8 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
           return;
 
         case DOCX_TYPE:
-          const docx = await renderDOCX(html);
+          // Render the html first. This will be used to generate the DOCX
+          const docx = await renderDOCX(renderHTML(display, margin, font, data));
           requestLogger.debug("Generating DOCX");
           res.setHeader("Content-Type", DOCX_TYPE);
           res.setHeader(
@@ -243,12 +242,19 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
           return;
 
         case HTML_TYPE:
+          const html = renderHTML(display, margin, font, data);
           requestLogger.debug("Generating HTML");
           res.type("html").send(html);
           return;
 
+        case JSON_TYPE:
+          requestLogger.debug("Generating JSON");
+          res.type("json").send(data);
+          return;
+
         case PDF_TYPE:
-          const pdf = await renderPDF(html);
+          // Render the HTML first which is then used to render the PDF
+          const pdf = await renderPDF(renderHTML(display, margin, font, data));
           requestLogger.debug("Generating PDF");
           res.setHeader("Content-Type", PDF_TYPE);
           res.setHeader(
