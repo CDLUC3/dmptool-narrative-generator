@@ -22,6 +22,7 @@ RUN rm -rf dist/__tests__ \
 FROM public.ecr.aws/docker/library/node:lts-slim AS runner
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
     ca-certificates \
     fonts-freefont-ttf \
     fonts-dejavu \
@@ -55,7 +56,6 @@ RUN npm ci --omit=dev
 # Copy compiled dist code from builder
 COPY --from=builder /app/dist ./dist
 
-# Run as non-root user for safety
 # Create non-root user and group in Debian slim
 RUN groupadd -r pptrgroup && useradd -r -g pptrgroup -m pptruser \
     && chown -R pptruser:pptrgroup /app
@@ -64,7 +64,8 @@ USER pptruser
 
 # Puppeteer-managed Chrome
 RUN npx puppeteer browsers install chrome
-ENV PUPPETEER_EXECUTABLE_PATH=/root/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome
+ENV PUPPETEER_EXECUTABLE_PATH=/home/pptruser/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome
+
 
 # Expose API port
 EXPOSE 4030
