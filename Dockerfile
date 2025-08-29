@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM public.ecr.aws/docker/library/node:lts-alpine3.22 AS builder
+FROM public.ecr.aws/docker/library/node:lts-slim AS builder
 
 WORKDIR /app
 
@@ -18,18 +18,33 @@ RUN rm -rf dist/__tests__ \
            dist/**/__tests__ \
            dist/**/__mocks__
 
-# Stage 2: Production Image (Chromium)
-FROM public.ecr.aws/z8o9m4l5/selenium/standalone-chrome:4.35.0 AS runner
+# Stage 2: Production Image
+FROM public.ecr.aws/docker/library/node:lts-slim AS runner
 
-# Install font helpers to support non-ascii characters
-RUN apk add --no-cache \
-    bash \
-    freetype \
-    ttf-freefont \
-    ttf-dejavu \
-    ttf-liberation \
-    font-noto-cjk \
-  && rm -rf /var/cache/apk/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    fonts-freefont-ttf \
+    fonts-dejavu \
+    fonts-liberation \
+    fonts-noto-cjk \
+    libasound2 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libxrandr2 \
+    xdg-utils \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -41,14 +56,15 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 
 # Run as non-root user for safety
-# Create non-root user and group in Alpine
-RUN addgroup -S pptrgroup && adduser -S pptruser -G pptrgroup \
+# Create non-root user and group in Debian slim
+RUN groupadd -r pptrgroup && useradd -r -g pptrgroup -m pptruser \
     && chown -R pptruser:pptrgroup /app
 
 USER pptruser
 
-# Install Chrome
+# Puppeteer-managed Chrome
 RUN npx puppeteer browsers install chrome
+ENV PUPPETEER_EXECUTABLE_PATH=/root/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome
 
 # Expose API port
 EXPOSE 4030
