@@ -66,8 +66,7 @@ USER pptruser
 
 # Puppeteer-managed Chrome
 RUN npx puppeteer browsers install chrome
-ENV PUPPETEER_EXECUTABLE_PATH=/home/pptruser/.cache/puppeteer/chrome/linux-*/chrome-linux64/chrome
-
+ENV PUPPETEER_EXECUTABLE_PATH=/home/pptruser/.cache/puppeteer/chrome/linux_arm-*/chrome-linux64/chrome
 
 # Expose API port
 EXPOSE 4030
