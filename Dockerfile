@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     nodejs \
     npm \
+    chromium \
     ca-certificates \
     fonts-freefont-ttf \
     fonts-dejavu \
@@ -65,8 +66,9 @@ COPY --from=builder /app/dist ./dist
 # USER pptruser
 
 # Puppeteer-managed Chrome
-RUN npx puppeteer browsers install chrome
-ENV PUPPETEER_EXECUTABLE_PATH=/root/.cache/puppeteer/chrome-headless-shell/linux_arm-*/chrome-headless-shell-linux64/chrome-headless-shell
+# RUN npm install puppeteer
+# RUN npx puppeteer browsers install chrome
+# ENV PUPPETEER_EXECUTABLE_PATH=/root/.cache/puppeteer/chrome-headless-shell/linux_arm-*/chrome-headless-shell-linux64/chrome-headless-shell
 
 # Expose API port
 EXPOSE 4030
