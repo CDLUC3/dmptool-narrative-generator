@@ -171,17 +171,16 @@ Handlebars.registerHelper("doiForDisplay", function (doi: string): string {
   return doi.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, "");
 });
 
-Handlebars.registerHelper("orcidForDisplay", function (orcid: string): string {
-  return orcid.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "");
-});
-
-Handlebars.registerHelper("contactIdentifierForDisplay", function (type: string, id: string): string {
-  if (type === "url") {
-    return `<strong>ORCID:</strong> <a href="${id}" target="_blank">${id}</a>`
-  } else if (id.includes("@")) {
-    return `<strong>Email:</strong> <a href="mailto:${id}">${id}</a>`
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Handlebars.registerHelper("contactIdentifierForDisplay", function (contactId: any): string {
+  if (contactId?.type === "url" && contactId?.identifier) {
+    const idForDisplay = contactId?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
+    return `- <strong>ORCID:</strong> <a href="${contactId?.identifier}" target="_blank">${idForDisplay}</a>`
+  } else if (contactId?.identifier?.includes("@")) {
+    return `- <strong>Email:</strong> <a href="mailto:${contactId?.identifier}">${contactId?.identifier}</a>`
   } else {
-    return id;
+    return contactId?.identifier ? `- ${contactId?.identifier}` : "";
   }
 });
 
@@ -437,7 +436,7 @@ export function renderHTML(
             <b>Title: </b>{{title}}
           </p>
           <p>
-            <strong>Creator:</strong> {{contact.name}} - {{{contactIdentifierForDisplay}}}
+            <strong>Creator:</strong> {{contact.name}} {{{contactIdentifierForDisplay contact.contact_id}}}
           </p>
           <p>
             <b>Affiliation: </b><a href="{{contact.dmproadmap_affiliation.affiliation_id.identifier}}" target="_blank">{{contact.dmproadmap_affiliation.name}}</a>
