@@ -1,4 +1,3 @@
-import { Document, Packer, Paragraph, TextRun } from "docx";
 import * as htmlToDocx from "html-to-docx";
 import { FontInterface, MarginInterface } from "./server";
 import { Logger } from "pino";
