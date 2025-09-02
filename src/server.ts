@@ -12,8 +12,7 @@ import { initLogger, logger, prepareObjectForLogs } from "./logger";
 import { safeNumber, safeBoolean, pointsToFontSize } from "./helper";
 import { expressjwt, Request } from "express-jwt";
 import { getDMP } from "./dynamo";
-import jwt from 'jsonwebtoken';
-import {MySQLConnection} from "./mysql";
+import { MySQLConnection } from "./mysql";
 
 dotenv.config();
 
@@ -74,6 +73,7 @@ export interface JWTAccessToken extends JwtPayload {
 }
 
 // ---------------- Convert query params into options ----------------
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function prepareOptions(params: any): OptionsInterface {
   return {
     version: params?.version,
@@ -121,6 +121,8 @@ const auth = expressjwt({
 
 // ---------------- Authorization check ----------------
 function hasPermissionToDownloadNarrative(
+  // TODO: Update this to use the type once @dmptool/types supports the common standard
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any,
   userDMPs: UserDMPInterface[],
   token: JWTAccessToken | null
@@ -137,9 +139,9 @@ function hasPermissionToDownloadNarrative(
     // SuperAdmins can always access DMP narratives
     || token?.role === "SUPERADMIN"
     // Admins can always access DMP narratives for DMPs that belong to their affiliation
-    || (token?.role === "ADMIN" && affiliations.includes(token.affiliationId))
+    || (token?.role === "ADMIN" && affiliations.includes(token?.affiliationId))
     // Researchers can access the narrative if the DMP is one associated with their token
-    || userDMPs.some(d => d.dmpId === data.dmp_id?.identifier);
+    || userDMPs?.some(d => d.dmpId === data?.dmp_id?.identifier);
 }
 
 // ----------------- Initialize the server  -----------------
@@ -234,15 +236,23 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
 
     if (data && hasPermission) {
       switch (accept) {
-        case CSV_TYPE:
+        case CSV_TYPE: {
           const csv = renderCSV(display, data);
           requestLogger.debug("Generating CSV");
           res.type("csv").send(csv);
           return;
+        }
 
-        case DOCX_TYPE:
+        case DOCX_TYPE: {
+          const html = renderHTML(display, margin, font, data);
           // Render the html first. This will be used to generate the DOCX
-          const docx = await renderDOCX(renderHTML(display, margin, font, data));
+          const docx = await renderDOCX(
+            requestLogger,
+            data?.title || "Data management plan",
+            html,
+            margin,
+            font
+          );
           requestLogger.debug("Generating DOCX");
           res.setHeader("Content-Type", DOCX_TYPE);
           res.setHeader(
@@ -251,19 +261,21 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
           );
           res.send(docx);
           return;
+        }
 
-        case HTML_TYPE:
+        case HTML_TYPE: {
           const html = renderHTML(display, margin, font, data);
           requestLogger.debug("Generating HTML");
           res.type("html").send(html);
           return;
+        }
 
         case JSON_TYPE:
           requestLogger.debug("Generating JSON");
           res.type("json").send(data);
           return;
 
-        case PDF_TYPE:
+        case PDF_TYPE: {
           // Render the HTML first which is then used to render the PDF
           const pdf = await renderPDF(renderHTML(display, margin, font, data));
           requestLogger.debug("Generating PDF");
@@ -274,13 +286,15 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
           );
           res.send(pdf);
           return;
+        }
 
-        case TXT_TYPE:
+        case TXT_TYPE: {
           // Render the HTML first which is then used to render the TXT
           const txt = await renderTXT(renderHTML(display, margin, font, data));
           requestLogger.debug("Generating TXT");
           res.type("txt").send(txt);
           return;
+        }
 
         default:
           requestLogger.debug(`Unsupported format requested: ${accept}`);

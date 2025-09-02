@@ -22,6 +22,7 @@ describe("renderPdfWithPuppeteer", () => {
       waitForTimeout: jest.fn(),
       exposeFunction: jest.fn(),
       // add anything else if needed
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     mockBrowser = {
@@ -29,6 +30,7 @@ describe("renderPdfWithPuppeteer", () => {
       close: jest.fn().mockResolvedValue(undefined),
       pages: jest.fn().mockResolvedValue([mockPage]),
       wsEndpoint: jest.fn(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     (puppeteer.launch as jest.Mock).mockResolvedValue(mockBrowser);

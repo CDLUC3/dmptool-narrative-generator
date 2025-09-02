@@ -35,8 +35,8 @@ describe("safeBoolean", () => {
   });
 
   it("handles undefined or null gracefully", () => {
-    expect(safeBoolean(undefined as any, true)).toBe(true);
-    expect(safeBoolean(null as any, false)).toBe(false);
+    expect(safeBoolean(undefined, true)).toBe(true);
+    expect(safeBoolean(null, false)).toBe(false);
   });
 });
 

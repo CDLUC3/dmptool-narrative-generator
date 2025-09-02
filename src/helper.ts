@@ -55,7 +55,7 @@ export function formatDate(date: string, includeDay = true): string {
       })
     }
     return dateOut === 'Invalid Date' ? 'None specified' : dateOut;
-  } catch (err) {
+  } catch {
     return 'None specified';
   }
 }

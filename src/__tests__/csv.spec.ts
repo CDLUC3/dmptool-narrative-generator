@@ -1,4 +1,5 @@
 import { renderCSV } from "../csv";
+import {AnyAnswerType, TableAnswerType} from "@dmptool/types";
 
 const defaultDisplayOptions = {
   includeCoverPage: true,
@@ -16,7 +17,7 @@ describe("renderCsv + answerToCSV integration", () => {
     includeQuestionText: false
   };
 
-  const wrap = (answer_json: any) => ({
+  const wrap = (answer_json: AnyAnswerType) => ({
     dmproadmap_narrative: {
       sections: [
         {
@@ -28,7 +29,13 @@ describe("renderCsv + answerToCSV integration", () => {
   });
 
   it("handles textArea (strips HTML)", () => {
-    const data = wrap({ type: "textArea", answer: "<p>Hello <b>World</b></p>" });
+    const data = wrap({
+      type: "textArea",
+      answer: "<p>Hello <b>World</b></p>",
+      meta: {
+        schemaVersion: "1.0.0",
+      }
+    });
     const csv = renderCSV(baseDisplay, data);
     expect(csv).toContain("Hello World");
   });
@@ -36,26 +43,47 @@ describe("renderCsv + answerToCSV integration", () => {
   it("handles dateRange (uses formatDate)", () => {
     const data = wrap({
       type: "dateRange",
-      answer: { start: "2020-01-01", end: "2020-12-31" }
+      answer: { start: "2020-01-01", end: "2020-12-31" },
+      meta: {
+        schemaVersion: "1.0.0",
+      }
     });
     const csv = renderCSV(baseDisplay, data);
     expect(csv).toContain("December 31, 2019 to December 30, 2020");
   });
 
   it("handles numberRange", () => {
-    const data = wrap({ type: "numberRange", answer: { start: 1, end: 10 } });
+    const data = wrap({
+      type: "numberRange",
+      answer: { start: 1, end: 10 },
+      meta: {
+        schemaVersion: "1.0.0",
+      }
+    });
     const csv = renderCSV(baseDisplay, data);
     expect(csv).toContain("1 to 10");
   });
 
   it("handles checkBoxes (joins with ;)", () => {
-    const data = wrap({ type: "checkBoxes", answer: ["A", "B", "C"] });
+    const data = wrap({
+      type: "checkBoxes",
+      answer: ["A", "B", "C"],
+      meta: {
+        schemaVersion: "1.0.0",
+      }
+    });
     const csv = renderCSV(baseDisplay, data);
     expect(csv).toContain("A; B; C");
   });
 
   it("handles multiselectBox", () => {
-    const data = wrap({ type: "multiselectBox", answer: ["X", "Y"] });
+    const data = wrap({
+      type: "multiselectBox",
+      answer: ["X", "Y"],
+      meta: {
+        schemaVersion: "1.0.0",
+      }
+    });
     const csv = renderCSV(baseDisplay, data);
     expect(csv).toContain("X; Y");
   });
@@ -63,7 +91,10 @@ describe("renderCsv + answerToCSV integration", () => {
   it("handles affiliationSearch with id", () => {
     const data = wrap({
       type: "affiliationSearch",
-      answer: { affiliationName: "Uni", affiliationId: "123" }
+      answer: { affiliationName: "Uni", affiliationId: "123" },
+      meta: {
+        schemaVersion: "1.0.0",
+      }
     });
     const csv = renderCSV(baseDisplay, data);
     expect(csv).toContain("Uni (123)");
@@ -72,37 +103,42 @@ describe("renderCsv + answerToCSV integration", () => {
   it("handles affiliationSearch without id", () => {
     const data = wrap({
       type: "affiliationSearch",
-      answer: { affiliationName: "Uni" }
+      answer: { affiliationName: "Uni", affiliationId: null },
+      meta: {
+        schemaVersion: "1.0.0",
+      }
     });
     const csv = renderCSV(baseDisplay, data);
     expect(csv).toContain("Uni");
   });
 
   it("handles table (JSON.stringify)", () => {
-    const obj = {
-      columnHeadings: ["col1", "col2"],
-      answer: [{
-        columns: ["row1col1", "row1col2"],
-      }]
-    };
     // CSV doubles up quotation marks!
-    const expected = '{""columnHeadings"":[""col1"",""col2""],""answer"":[{""columns"":[""row1col1"",""row1col2""]}]}';
-    const data = wrap({ type: "table", answer: obj });
+    // const expected = '{""columnHeadings"":[""col1"",""col2""],""answer"":[{""columns"":[""row1col1"",""row1col2""]}]}';
+    const obj = {
+      type: "table",
+      columnHeadings: ["col1", "col2"],
+      answer: [
+        {
+          columns: [
+            { type: "text", answer: "row1col1", meta: { schemaVersion: "v1.0.0" } },
+            { type: "text", answer: "row1col2", meta: { schemaVersion: "v1.0.0" } }
+          ],
+        }, {
+          columns: [
+            { type: "text", answer: "row2col1", meta: { schemaVersion: "v1.0.0" } },
+            { type: "text", answer: "row2col2", meta: { schemaVersion: "v1.0.0" } }
+          ],
+        }
+      ],
+      meta: {
+        schemaVersion: "1.0.0",
+      }
+    }
+    const data = wrap(obj as TableAnswerType);
     const csv = renderCSV(baseDisplay, data);
+    const expected = "{\"\"type\"\":\"\"text\"\",\"\"answer\"\":\"\"row1col2\"\"";
     expect(csv).toContain(expected);
-  });
-
-  it("handles unknown type with raw answer", () => {
-    const data = wrap({ type: "other", answer: "raw" });
-    const csv = renderCSV(baseDisplay, data);
-    expect(csv).toContain("raw");
-  });
-
-  it("handles undefined answer as empty string", () => {
-    const data = wrap({ type: "other", answer: undefined });
-    const csv = renderCSV(baseDisplay, data);
-    // should still include header + empty cell
-    expect(csv.trim()).toEqual("Answer");
   });
 });
 

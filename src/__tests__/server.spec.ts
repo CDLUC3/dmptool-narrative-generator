@@ -1,4 +1,5 @@
 import request from "supertest";
+import { MySQLConnection } from '../mysql';
 
 jest.mock("../dynamo", () => ({
   getDMP: jest.fn()
@@ -32,7 +33,8 @@ import { renderPDF } from "../pdf";
 import { renderTXT } from "../txt";
 
 import app, { JWTAccessToken } from "../server";
-import { mockToken } from "./setup"; // ensure the file does `export default app;`
+import {getMockGetDMPResponse, mockToken, setMockGetDMPResponse} from "./setup"; // ensure the file does `export default app;`
+import { AccessibleDMP } from "../mysql";
 
 const baseTokenParams: JWTAccessToken = {
   id: 123,
@@ -47,6 +49,7 @@ const baseTokenParams: JWTAccessToken = {
   dmpIds: []
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let fakeToken: any = {};
 
 jest.mock("express-jwt", () => {
@@ -61,7 +64,7 @@ jest.mock("express-jwt", () => {
 });
 
 describe("server endpoints", () => {
-  let payload = {
+  const payload = {
     dmp_id: { identifier: "d1" },
     title: "Test DMP",
     dmproadmap_privacy: "public"
@@ -168,6 +171,27 @@ describe("server endpoints", () => {
     expect(res.text).toContain(expected);
   });
 
+  it("returns PDF via accept header", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative")
+      .set("Accept", "application/pdf");
+    expect(renderPDF).toHaveBeenCalled();
+    const ctHdr = res.headers["content-type"];
+    const cdHdr = res.headers["content-disposition"];
+    expect(ctHdr).toMatch("application/pdf");
+    expect(cdHdr).toContain(".pdf");
+  });
+
+  it("returns PDF via extension", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative.pdf");
+    expect(renderPDF).toHaveBeenCalled();
+    const ctHdr = res.headers["content-type"];
+    const cdHdr = res.headers["content-disposition"];
+    expect(ctHdr).toMatch("application/pdf");
+    expect(cdHdr).toContain(".pdf");
+  });
+
   it("returns TXT via accept header", async () => {
     const res = await request(app)
       .get("/dmps/foo/narrative")
@@ -236,19 +260,30 @@ describe("server endpoints", () => {
   it("returns HTML if token is for a RESEARCHER who has access (private DMP", async () => {
     fakeToken = mockToken({
       ...baseTokenParams,
-      role: "RESEARCHER",
-      dmpIds: [{ dmpId: "d1", accessLevel: "EDIT" }]
+      role: "RESEARCHER"
     });
+
+    jest.spyOn(MySQLConnection.prototype, 'getUserDMPs')
+      .mockResolvedValue([
+        { dmpId: 'd1', accessLevel: 'EDIT' },
+        { dmpId: 'd2', accessLevel: 'OWN' },
+        { dmpId: 'd3', accessLevel: 'COMMENT' },
+      ]);
+
     (getDMP as jest.Mock).mockResolvedValue({
       dmp_id: { identifier: "d1" },
       dmproadmap_privacy: "private"
     });
+
     const res = await request(app)
       .get("/dmps/foo/narrative")
       .set("Accept", "text/html");
     expect(renderHTML).toHaveBeenCalled();
     expect(res.type).toMatch(/html/);
     expect(res.text).toContain("<html>");
+
+    // Reset the mock
+    jest.spyOn(MySQLConnection.prototype, 'getUserDMPs').mockResolvedValue([]);
   });
 
   it("returns 404 if no token (private DMP)", async () => {

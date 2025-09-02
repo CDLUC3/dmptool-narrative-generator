@@ -1,12 +1,17 @@
 import * as mysql2 from 'mysql2/promise';
 import { Logger } from 'pino';
 import { logger, prepareObjectForLogs } from './logger';
-import {JWTAccessToken} from "./server";
+import { JWTAccessToken } from "./server";
 
 export interface DatabaseConnection {
   getConnection(): Promise<mysql2.PoolConnection>;
   query<T>(sql: string, values?: string[]): Promise<T>;
   close(): Promise<void>;
+}
+
+export interface AccessibleDMP {
+  dmpId: string;
+  accessLevel: string;
 }
 
 export class DatabaseError extends Error {
@@ -129,7 +134,9 @@ export class MySQLConnection implements DatabaseConnection {
     }
   }
 
-  public async getUserDMPs(requestLogger: Logger, token: JWTAccessToken): Promise<any> {
+  // TODO: Update this to use the type once @dmptool/types supports the common standard
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public async getUserDMPs(requestLogger: Logger, token: JWTAccessToken): Promise<AccessibleDMP[]> {
     // If there is no token bail out.
     if (!token?.email) return [];
 
@@ -146,6 +153,7 @@ export class MySQLConnection implements DatabaseConnection {
       return Array.isArray(results) ? results : [];
     } catch (err) {
       requestLogger.error(prepareObjectForLogs({ sql, values, err }), 'Unable to process SQL query');
+      return [];
     }
   }
 }

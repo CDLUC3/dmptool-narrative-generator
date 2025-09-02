@@ -70,14 +70,18 @@ describe("logger module", () => {
     });
 
     it("returns base logger if child creation fails", () => {
+      jest.spyOn(console, 'error');
+
+      const err = new Error("child failed");
       const badLogger = {
         child: () => {
-          throw new Error("child failed");
+          throw err;
         },
       } as unknown as Logger;
 
       const result = initLogger(badLogger, { app: "app", env: "test" });
       expect(result).toBe(badLogger);
+      expect(console.error).toHaveBeenCalledWith("Unable to initialize the logger", err);
     });
   });
 });

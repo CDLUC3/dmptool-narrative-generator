@@ -30,7 +30,7 @@ function safeYesNoUnknown(value: string): string {
 
 // ---------------- Format an Answer as HTML ----------------
 function answerToHTML (json: AnyAnswerType): string {
-  let out: string = "<p>Not yet answered.</p>";
+  let out = "<p>Not yet answered.</p>";
 
   // If the answer isn't a known type skip it
   if (!Object.keys(AnswerSchemaMap).includes(json['type'])) {
@@ -50,24 +50,27 @@ function answerToHTML (json: AnyAnswerType): string {
         break;
 
       case "checkBoxes":
-      case "multiselectBox":
+      case "multiselectBox": {
         if (Array.isArray(json.answer) && json.answer.length > 0) {
           const answers = json.answer.map((answer) => `<li>${answer}</li>`);
           out = `<ul>${answers.join("")}</ul>`;
         }
         break;
+      }
 
-      case "dateRange":
+      case "dateRange": {
         const drAnswer = json.answer as DateRangeAnswerType["answer"];
         out = `<p>${formatDate(drAnswer.start)} to ${formatDate(drAnswer.end)}</p>`;
         break;
+      }
 
-      case "numberRange":
+      case "numberRange": {
         const nrAnswer = json.answer as NumberRangeAnswerType["answer"];
         out = `<p>${nrAnswer?.start} to ${nrAnswer?.end}</p>`;
         break;
+      }
 
-      case "table":
+      case "table": {
         const tblAnswer = json as TableAnswerType;
         const cols = tblAnswer.columnHeadings;
         const rows = tblAnswer.answer;
@@ -84,7 +87,7 @@ function answerToHTML (json: AnyAnswerType): string {
           // Loop through each column and convert the entry to HTML based on its type
           const tds = row.columns.map((td) => {
             const tdAnswer = td as AnyAnswerType;
-            `<td>${answerToHTML(tdAnswer)}</td>`;
+            return `<td>${answerToHTML(tdAnswer)}</td>`;
           }).join("");
 
           return `<tr>${tds}</tr>`;
@@ -92,11 +95,13 @@ function answerToHTML (json: AnyAnswerType): string {
 
         out = `<table>${table}</table>`;
         break;
+      }
 
-      case "date":
+      case "date": {
         const dtAnswer = json.answer as DateAnswerType["answer"];
         out = `<p>${formatDate(dtAnswer)}</p>`;
         break;
+      }
 
       case "currency":
         out = `<p>$${json.answer.toLocaleString('en-US')}</p>`;
@@ -110,7 +115,7 @@ function answerToHTML (json: AnyAnswerType): string {
         out = json.answer ? "<p>Yes</p>" : "<p>No</p>";
         break;
 
-      case "affiliationSearch":
+      case "affiliationSearch": {
         const data = json.answer as AffiliationSearchAnswerType["answer"];
         if (data?.affiliationId) {
           out = `<p><a href="${data.affiliationId}" target="_blank">${data.affiliationName ?? data.affiliationId}</a></p>`;
@@ -118,6 +123,7 @@ function answerToHTML (json: AnyAnswerType): string {
           out = `<p>${data.affiliationName}</p>`;
         }
         break;
+      }
 
       case "url":
         out = `<p><a href="${json.answer}" target="_blank">${json.answer}</a></p>`;
@@ -137,15 +143,19 @@ function answerToHTML (json: AnyAnswerType): string {
 }
 
 // ---------------- Related works for a specific type ----------------
-function workTypeForDisplay(workType: string, pluralizeIt: boolean = true): string {
+function workTypeForDisplay(workType: string, pluralizeIt = true): string {
   // Capitalize the type name and replace underscores with spaces
   let typeLabel = workType.replace(/_/g, " ");
   typeLabel = pluralizeIt ? pluralize(typeLabel) : typeLabel;
   return `${typeLabel[0].toUpperCase()}${typeLabel.slice(1)}`;
 }
 
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function relatedWorksForType(workType: string, works: any[]): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const out: string[] = works.filter((work: any) => work.work_type.includes(workType))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((work: any) => {
       return work?.citation ? work.citation : `<a href="${work.identifier}" target="_blank">${work.identifier}</a>`;
     });
@@ -166,10 +176,14 @@ Handlebars.registerHelper("orcidForDisplay", function (orcid: string): string {
 });
 
 // ---------------- Group contributors by role ----------------
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("contributorsForRole", function(role: string, contributors: any[]): any {
   if (!Array.isArray(contributors) || contributors.length < 1) return [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const out: string[] = contributors.filter((contributor: any) => contributor.role.includes(role))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((contributor: any) => {
         return contributor?.contributor_id?.identifier ? `<a href="${contributor.contributor_id.identifier}" target="_blank">${contributor.name}</a>` : contributor.name;
     });
@@ -178,9 +192,12 @@ Handlebars.registerHelper("contributorsForRole", function(role: string, contribu
 });
 
 // ---------------- Group related works by type ----------------
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("relatedWorksByType", function(works: any[]): string {
   if (!Array.isArray(works) || works.length < 1) return "";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const workTypes: string[] = works.map((work: any) => work.work_type).flat();
 
   const out: string[] = [];
@@ -196,6 +213,8 @@ Handlebars.registerHelper("relatedWorksByType", function(works: any[]): string {
 });
 
 // ---------------- Research Outputs Table ----------------
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("researchOutputsAsTable", function(outputs: any[]): string {
   if (!Array.isArray(outputs) || outputs.length < 1) return "";
 
@@ -216,6 +235,8 @@ Handlebars.registerHelper("researchOutputsAsTable", function(outputs: any[]): st
     "<th>License</th>",
   ]
 
+  // TODO: Update the type here once the common standard is in @dmptool/types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const trs: string[] = outputs.map((output: any) => {
     const standards = Array.isArray(output.metadata) ? output.metadata.map((ms) => `<a href="${ms.metadata_standard_id.identifier}" target="_blank">${ms.metadata_standard_id.identifier}</a>`) : [];
 
@@ -270,26 +291,34 @@ Handlebars.registerHelper("researchOutputsAsTable", function(outputs: any[]): st
 });
 
 // ---------------- Funder and Project helpers ----------------
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("funders", function(project: any): string {
   let funding = project.map((project) => project.funding).flat();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   funding = funding.filter((fund: any) => fund !== null && fund !== undefined);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return funding.map((fund: any) => {
     return fund?.funder_id?.identifier ? `<a href="${fund.funder_id.identifier}" target="_blank">${fund.name}</a>` : fund.name;
   }).join("; ");
 });
 
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("displayProjectStartDate", function(project: any): string {
   const dates: string[] = project.map((project) => formatDate(project.start, false)).flat();
   return dates.length === 0 ? "None specified" : dates.sort()[0];
 });
 
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("displayProjectEndDate", function (project: any): string {
   const dates: string[] = project.map((project) => formatDate(project.end, false)).flat();
   return dates.length === 0 ? "None specified" : dates.sort()[dates.length - 1];
 });
 
 // ---------------- Answer helpers ----------------
-Handlebars.registerHelper("formatAnswer", function (json: any): string {
+Handlebars.registerHelper("formatAnswer", function (json: AnyAnswerType): string {
   return answerToHTML(json);
 });
 
@@ -298,7 +327,9 @@ export function renderHTML(
   display: DisplayOptionsInterface,
   margin: MarginInterface,
   font: FontInterface,
-  data: any // TODO: Set this to the common standard once we add it to @dmptool/types
+  // TODO: Update the type here once the common standard is in @dmptool/types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any
 ): string {
   const template = Handlebars.compile(`
   <html>
