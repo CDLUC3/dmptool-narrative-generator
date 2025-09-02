@@ -175,6 +175,16 @@ Handlebars.registerHelper("orcidForDisplay", function (orcid: string): string {
   return orcid.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "");
 });
 
+Handlebars.registerHelper("contactIdentifierForDisplay", function (type: string, id: string): string {
+  if (type === "url") {
+    return `<strong>ORCID:</strong> <a href="${id}" target="_blank">${id}</a>`
+  } else if (id.includes("@")) {
+    return `<strong>Email:</strong> <a href="mailto:${id}">${id}</a>`
+  } else {
+    return id;
+  }
+});
+
 // ---------------- Group contributors by role ----------------
 // TODO: Update the type here once the common standard is in @dmptool/types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -427,7 +437,7 @@ export function renderHTML(
             <b>Title: </b>{{title}}
           </p>
           <p>
-            <strong>Creator:</strong> {{contact.name}} - <strong>ORCID:</strong> <a href="{{contact.contact_id.identifier}}" target="_blank">{{orcidForDisplay contact.contact_id.identifier}}</a>
+            <strong>Creator:</strong> {{contact.name}} - {{{contactIdentifierForDisplay}}}
           </p>
           <p>
             <b>Affiliation: </b><a href="{{contact.dmproadmap_affiliation.affiliation_id.identifier}}" target="_blank">{{contact.dmproadmap_affiliation.name}}</a>
