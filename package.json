@@ -33,6 +33,7 @@
     "handlebars": "^4.7.8",
     "htmlparser2": "^10.0.0",
     "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.4",
     "pino": "^9.9.0",
     "pluralize": "^8.0.0",
     "puppeteer": "^24.17.0"

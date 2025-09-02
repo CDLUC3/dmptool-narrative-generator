@@ -13,6 +13,7 @@ import { safeNumber, safeBoolean, pointsToFontSize } from "./helper";
 import { expressjwt, Request } from "express-jwt";
 import { getDMP } from "./dynamo";
 import jwt from 'jsonwebtoken';
+import {MySQLConnection} from "./mysql";
 
 dotenv.config();
 
@@ -53,6 +54,12 @@ interface OptionsInterface {
   font: FontInterface;
 }
 
+// ---------------- A DMP id and the user's access level ----------------
+export interface UserDMPInterface {
+  dmpId: string,
+  accessLevel: string,
+}
+
 // ---------------- JSON Web Token ----------------
 export interface JWTAccessToken extends JwtPayload {
   id: number,
@@ -62,10 +69,6 @@ export interface JWTAccessToken extends JwtPayload {
   role: string,
   affiliationId: string,
   languageId: string,
-  dmpIds: {
-    dmpId: string,
-    accessLevel: string,
-  }[],
   jti: string,
   expiresIn: number,
 }
@@ -117,7 +120,11 @@ const auth = expressjwt({
 });
 
 // ---------------- Authorization check ----------------
-function hasPermissionToDownloadNarrative(data: any, token: JWTAccessToken | null): boolean {
+function hasPermissionToDownloadNarrative(
+  data: any,
+  userDMPs: UserDMPInterface[],
+  token: JWTAccessToken | null
+): boolean {
   const affiliations = [data.contact?.dmproadmap_affiliation?.affiliation_id?.identifier];
 
   // Now collect all the contributors
@@ -132,10 +139,11 @@ function hasPermissionToDownloadNarrative(data: any, token: JWTAccessToken | nul
     // Admins can always access DMP narratives for DMPs that belong to their affiliation
     || (token?.role === "ADMIN" && affiliations.includes(token.affiliationId))
     // Researchers can access the narrative if the DMP is one associated with their token
-    || token?.dmpIds.some(d => d.dmpId === data.dmp_id?.identifier);
+    || userDMPs.some(d => d.dmpId === data.dmp_id?.identifier);
 }
 
 // ----------------- Initialize the server  -----------------
+const sqlDataSource = new MySQLConnection();
 const app = express();
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
@@ -212,8 +220,11 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   try {
     // Fetch the DMP's JSON from the DynamoDB Table
     const data = await getDMP(requestLogger, dmpId, version);
+    // Fetch the list of DMPs the user has access to
+    const userDMPs = await sqlDataSource.getUserDMPs(requestLogger, token);
 
-    const hasPermission = hasPermissionToDownloadNarrative(data, token);
+    // Determine if the caller has permission to view the DMP's narrative
+    const hasPermission = hasPermissionToDownloadNarrative(data, userDMPs, token);
 
     requestLogger.debug(data, "Retrieved DMP metadata file");
 
@@ -293,10 +304,36 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
 app.get("/narrative-health", (_: Request, res: Response) => res.send("ok"));
 
 // ----------------- Startup the server  -----------------
-// only start listening if this file is run directly
-if (require.main === module) {
+const startServer = async () => {
+  await sqlDataSource.initPromise;
   const PORT = process.env.PORT || 3030;
   app.listen(PORT, () => console.log(`${process.env.APP_NAME} listening on port ${PORT}`));
+}
+
+// Graceful shutdown
+const shutdown = async () => {
+  try {
+    await sqlDataSource.close();
+    process.exit(0);
+  } catch (error) {
+    console.log('Error shutting down server:', error);
+    process.exit(1);
+  }
+};
+
+if (!process.listeners('SIGINT').includes(shutdown)) {
+  process.on('SIGINT', shutdown);
+}
+if (!process.listeners('SIGTERM').includes(shutdown)) {
+  process.on('SIGTERM', shutdown);
+}
+
+// only start listening if this file is run directly
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.log('Error starting server:', error)
+    process.exit(1);
+  });
 }
 
 export default app;
