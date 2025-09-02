@@ -1,4 +1,4 @@
-import * as htmlToDocx from "html-to-docx";
+import HTMLtoDOCX from "html-to-docx";
 import { FontInterface, MarginInterface } from "./server";
 import { Logger } from "pino";
 import { prepareObjectForLogs } from "./logger";
@@ -25,7 +25,7 @@ export async function renderDOCX(
   };
 
   try {
-    return await htmlToDocx(html, documentOptions);
+    return await HTMLtoDOCX(html, documentOptions);
   } catch (err) {
     const msg = "Unable to render DOCX."
     requestLogger.error(prepareObjectForLogs({ title, margin, font, err, html }), msg);
