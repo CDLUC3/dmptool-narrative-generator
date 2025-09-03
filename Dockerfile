@@ -1,25 +1,7 @@
 # Stage 1: Builder
-FROM public.ecr.aws/docker/library/node:lts-slim AS builder
+FROM public.ecr.aws/docker/library/node:lts-slim
 
 WORKDIR /app
-
-# Install all deps including devDependencies so we can compile TS
-COPY package*.json ./
-RUN npm ci
-
-# Copy source code and build
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build   # should output to dist/
-
-# Remove all the unecessary test and mock files from the distribution
-RUN rm -rf dist/__tests__ \
-           dist/__mocks__ \
-           dist/**/__tests__ \
-           dist/**/__mocks__
-
-# Stage 2: Production Image
-FROM public.ecr.aws/docker/library/node:lts-slim AS runner
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
@@ -52,25 +34,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy package.json & install only prod dependencies
+# Install all deps
 COPY package*.json ./
-RUN npm ci --omit=dev
-
-# Copy compiled dist code from builder
-COPY --from=builder /app/dist ./dist
-
-# Create non-root user and group in Debian slim
-# RUN groupadd -r pptrgroup && useradd -r -g pptrgroup -m pptruser \
-#     && chown -R pptruser:pptrgroup /app
-
-# USER pptruser
-
-# Puppeteer-managed Chrome
-# RUN npm install puppeteer
-# RUN npx puppeteer browsers install chrome
-# ENV PUPPETEER_EXECUTABLE_PATH=/root/.cache/puppeteer/chrome-headless-shell/linux_arm-*/chrome-headless-shell-linux64/chrome-headless-shell
+RUN npm ci
 
 # Expose API port
 EXPOSE 4030
 
-CMD ["node", "dist/server.js"]
+CMD ["npm", "run", "dev"]

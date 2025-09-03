@@ -1,0 +1,44 @@
+# NOTE::
+# The services, settings and environment setup in this compose file is for DEVELOPMENT ONLY!
+#
+# It is intended to run the Apollo server in an "offline" mode. All data will be mocked.
+#
+networks:
+  dmsp_backend_prototype_dmptool-network:
+    external: true
+
+services:
+  narrative:
+    container_name: narrative-generator
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4030:4030"
+    networks:
+      - dmsp_backend_prototype_dmptool-network
+    expose:
+      - 4030
+    env_file:
+      - .env
+    environment:
+      - "AWS_ACCESS_KEY_ID=DUMMYIDEXAMPLE"
+      - "AWS_SECRET_ACCESS_KEY=DUMMYEXAMPLEKEY"
+      - "REGION=us-west-2"
+      - "NODE_ENV=development"
+
+      - "MYSQL_CONNECTION_LIMIT=5"
+      - "MYSQL_HOST=apollo-mysql"
+      - "MYSQL_PORT=3306"
+      - "MYSQL_DATABASE=dmsp"
+      - "MYSQL_USER=root"
+      - "MYSQL_PASSWORD=d0ckerSecr3t"
+
+      - "DYNAMO_TABLE_NAME=localDMPTable"
+      - "DYNAMO_ENDPOINT=http://dynamodb:8000"
+
+      - "CACHE_HOST=apollo-redis"
+      - "CACHE_PORT=6379"
+      - "CACHE_CONNECT_TIMEOUT=10000"
+    volumes:
+      - ".:/app"

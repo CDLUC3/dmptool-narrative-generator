@@ -144,6 +144,14 @@ function hasPermissionToDownloadNarrative(
     || userDMPs?.some(d => d.dmpId === data?.dmp_id?.identifier);
 }
 
+// ----------------- Process the incoming Accept types  -----------------
+function processAccept(accept: string): string[] {
+  // The accept header may contain a lot of info and several types
+  //   e.g. text/html,application/xhtml+xml,application/xml;q=0.9,*/*;v=b3;q=0.7
+  const rawTypes = accept ? accept.split(";")[0] : "";
+  return rawTypes.split(",");
+}
+
 // ----------------- Initialize the server  -----------------
 const sqlDataSource = new MySQLConnection();
 const app = express();
@@ -235,72 +243,67 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
     }
 
     if (data && hasPermission) {
-      switch (accept) {
-        case CSV_TYPE: {
-          const csv = renderCSV(display, data);
-          requestLogger.debug("Generating CSV");
-          res.type("csv").send(csv);
-          return;
-        }
+      const acceptedTypes = processAccept(accept);
+      if (acceptedTypes.includes(CSV_TYPE)) {
+        const csv = renderCSV(display, data);
+        requestLogger.debug("Generating CSV");
+        res.type("csv").send(csv);
+        return;
 
-        case DOCX_TYPE: {
-          const html = renderHTML(display, margin, font, data);
-          // Render the html first. This will be used to generate the DOCX
-          const docx = await renderDOCX(
-            requestLogger,
-            data?.title || "Data management plan",
-            html,
-            margin,
-            font
-          );
-          requestLogger.debug("Generating DOCX");
-          res.setHeader("Content-Type", DOCX_TYPE);
-          res.setHeader(
-            "Content-Disposition",
-            `attachment; filename="${(data.title || "document").replace(/\W+/g, "-")}.docx"`
-          );
-          res.send(docx);
-          return;
-        }
+      } else if (acceptedTypes.includes(DOCX_TYPE)) {
+        const html = renderHTML(display, margin, font, data);
+        // Render the html first. This will be used to generate the DOCX
+        const docx = await renderDOCX(
+          requestLogger,
+          data?.title || "Data management plan",
+          html,
+          margin,
+          font
+        );
+        requestLogger.debug("Generating DOCX");
+        res.setHeader("Content-Type", DOCX_TYPE);
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${(data.title || "document").replace(/\W+/g, "-")}.docx"`
+        );
+        res.send(docx);
+        return;
 
-        case HTML_TYPE: {
-          const html = renderHTML(display, margin, font, data);
-          requestLogger.debug("Generating HTML");
-          res.type("html").send(html);
-          return;
-        }
+      } else if (acceptedTypes.includes(HTML_TYPE)) {
+        const html = renderHTML(display, margin, font, data);
+        requestLogger.debug("Generating HTML");
+        res.type("html").send(html);
+        return;
 
-        case JSON_TYPE:
-          requestLogger.debug("Generating JSON");
-          res.type("json").send(data);
-          return;
+      } else if (acceptedTypes.includes(JSON_TYPE)) {
+        requestLogger.debug("Generating JSON");
+        res.type("json").send(data);
+        return;
 
-        case PDF_TYPE: {
-          // Render the HTML first which is then used to render the PDF
-          const pdf = await renderPDF(renderHTML(display, margin, font, data));
-          requestLogger.debug("Generating PDF");
-          res.setHeader("Content-Type", PDF_TYPE);
-          res.setHeader(
-            "Content-Disposition",
-            `inline; filename="${(data.title || "document").replace(/\W+/g, "-")}.pdf"`
-          );
-          res.send(pdf);
-          return;
-        }
+      } else if (acceptedTypes.includes(PDF_TYPE)) {
+        // Render the HTML first which is then used to render the PDF
+        const pdf = await renderPDF(renderHTML(display, margin, font, data));
+        requestLogger.debug("Generating PDF");
+        res.setHeader("Content-Type", PDF_TYPE);
+        res.setHeader(
+          "Content-Disposition",
+          `inline; filename="${(data.title || "document").replace(/\W+/g, "-")}.pdf"`
+        );
+        res.send(pdf);
+        return;
 
-        case TXT_TYPE: {
-          // Render the HTML first which is then used to render the TXT
-          const txt = await renderTXT(renderHTML(display, margin, font, data));
-          requestLogger.debug("Generating TXT");
-          res.type("txt").send(txt);
-          return;
-        }
+      } else if (acceptedTypes.includes(TXT_TYPE)) {
+        // Render the HTML first which is then used to render the TXT
+        const txt = await renderTXT(renderHTML(display, margin, font, data));
+        requestLogger.debug("Generating TXT");
+        res.type("txt").send(txt);
+        return;
 
-        default:
-          requestLogger.debug(`Unsupported format requested: ${accept}`);
-          // The format requested is not supported!
-          res.status(406)
-            .send("Not Acceptable: Supported formats are HTML, PDF, CSV, DOCX, TXT");
+      } else {
+        requestLogger.debug(`Unsupported format requested: ${accept}`);
+        // The format requested is not supported!
+        res.status(406)
+          .send("Not Acceptable: Supported formats are HTML, PDF, CSV, DOCX, TXT");
       }
     } else {
       requestLogger.info("DMP not found or user did not have permission to download narrative");

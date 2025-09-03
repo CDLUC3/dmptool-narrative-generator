@@ -35,7 +35,7 @@ phases:
 
       # Build the Docker image
       - echo Building the Docker image...
-      - docker build -f Dockerfile -t $SHORT_ECR_URI:narrative-gen-latest .
+      - docker build -f Dockerfile.aws -t $SHORT_ECR_URI:narrative-gen-latest .
       - docker tag $ECR_REPOSITORY_URI:narrative-gen-latest $SHORT_ECR_URI:$IMAGE_TAG
   post_build:
     commands:

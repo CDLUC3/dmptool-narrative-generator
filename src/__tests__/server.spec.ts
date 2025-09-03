@@ -103,6 +103,23 @@ describe("server endpoints", () => {
     expect(res.status).toBe(200);
   });
 
+  it("returns HTML by default", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative");
+    expect(renderHTML).toHaveBeenCalled();
+    expect(res.type).toMatch(/html/);
+    expect(res.text).toContain("<html>");
+  });
+
+  it("can handle accept headers with multiple types and info", async () => {
+    const res = await request(app)
+      .get("/dmps/foo/narrative")
+      .set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;v=b3;q=0.7");
+    expect(renderHTML).toHaveBeenCalled();
+    expect(res.type).toMatch(/html/);
+    expect(res.text).toContain("<html>");
+  });
+
   it("returns CSV via accept header", async () => {
     const res = await request(app)
       .get("/dmps/foo/narrative")
