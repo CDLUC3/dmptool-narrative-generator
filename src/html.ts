@@ -221,84 +221,6 @@ Handlebars.registerHelper("relatedWorksByType", function(works: any[]): string {
   return out.length === 0 ? "None specified" : `<ul>${out.join("")}</ul>`;
 });
 
-// ---------------- Research Outputs Table ----------------
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("researchOutputsAsTable", function(outputs: any[]): string {
-  if (!Array.isArray(outputs) || outputs.length < 1) return "";
-
-  let hasDistributions = false;
-  const standardTHs: string[] = [
-      "<th>Title</th>",
-      "<th>Type</th>",
-      "<th>Anticipated release date</th>",
-      "<th>Metadata standard(s)</th>",
-      "<th>May contain sensitive data?</th>",
-      "<th>May contain PII?]</th>"
-  ];
-
-  const distrubtionTHs: string[] = [
-    "<th>Initial access level</th>",
-    "<th>Intended repository(ies)</th>",
-    "<th>Anticipated file size</th>",
-    "<th>License</th>",
-  ]
-
-  // TODO: Update the type here once the common standard is in @dmptool/types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const trs: string[] = outputs.map((output: any) => {
-    const standards = Array.isArray(output.metadata) ? output.metadata.map((ms) => `<a href="${ms.metadata_standard_id.identifier}" target="_blank">${ms.metadata_standard_id.identifier}</a>`) : [];
-
-    const distributions = Array.isArray(output.distribution) ? output.distribution : [];
-    let distributionTds = [];
-
-    if (distributions.length > 1) {
-      hasDistributions = true;
-      // There are many distributions, so use bulleted lists
-      const accessLevels = distributions.map((d) => {
-        return `<li>${d.data_access ? `${d.data_access[0]}${d.data_access.slice(1)}` : 'Unspecified'}</li>`
-      });
-      const repos = distributions.map((d) => {
-        return `<li>${d.host ? `<a href="${d.host.url}" target="_blank">${d.host.title}</a>` : 'Unspecified'}</li>`
-      });
-      const sizes = distributions.map((d) => {
-        return `<li>${safeNumber(d.byte_size, 0)} bytes</li>`
-      });
-      const licenses = distributions.map((d) => {
-        return `<li>${d.license?.license_ref ? `<a href="${d.license?.license_ref}" target="_blank">${d.license?.license_ref}</a>` : 'Unspecified'}</li>`
-      });
-
-      distributionTds = [
-        `<td><ul>${accessLevels}</ul></td>`,
-        `<td><ul>${repos}</ul></td>`,
-        `<td><ul>${sizes}</ul></td>`,
-        `<td><ul>${licenses}</ul></td>`,
-      ];
-    } else if (distributions.length === 1) {
-      // There's only one distribution so no need to use a bulleted list
-      distributionTds = [
-        `<td>${distributions[0].data_access ? `${output.distribution[0].data_access[0]}${output.distribution[0].data_access.slice(1)}` : 'Unspecified'}</td>`,
-        `<td>${distributions[0].host ? `<a href="${output.distribution[0].host.url}" target="_blank">${output.distribution[0].host.title}</a>` : 'Unspecified'}</td>`,
-        `<td>${safeNumber(distributions[0].byte_size, 0)} bytes</td>`,
-        `<td>${distributions[0].license?.license_ref ? `<a href="${output.distribution[0].license?.license_ref}" target="_blank">${output.distribution[0].license?.license_ref}</a>` : 'Unspecified'}</td>`,
-      ];
-    }
-
-    return [
-      `<td>${output.title}</td>`,
-      `<td>${workTypeForDisplay(output.type, false)}</td>`,
-      `<td>${output.issued ? formatDate(output.issued) : "Unknown"}</td>`,
-      `<td>${standards.length > 1 ? `<ul>${standards.map((s) => `<li>${s}</li>`)}</ul>` : standards[0] ?? "Unknown"}</td>`,
-      `<td>${safeYesNoUnknown(output?.sensitive_data)}</td>`,
-      `<td>${safeYesNoUnknown(output?.personal_data)}</td>`,
-      ...distributionTds,
-    ].join("")
-  });
-
-  const ths = hasDistributions ? standardTHs.concat(distrubtionTHs) : standardTHs;
-  return `<table><tr>${ths.join("")}</tr>${trs.map((tr) => `<tr>${tr}</tr>`).join("")}</table>`;
-});
-
 // ---------------- Funder and Project helpers ----------------
 // TODO: Update the type here once the common standard is in @dmptool/types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -408,15 +330,6 @@ export function renderHTML(
           margin-left: 15px;
           margin-bottom: 10px;
         }
-        ul.research_output {
-          margin-bottom: 15px;
-        }
-        ul.research_output li {
-          margin-bottom: 5px;
-        }
-        ul.research_output li strong {
-          padding-right: 5px;
-        }
       </style>
     </head>
     <body>
@@ -504,22 +417,6 @@ export function renderHTML(
         {{/each}}
       {{/if}}
       <hr class="bottom" />
-
-      {{#if ${display.includeResearchOutputs}}}
-        {{#if dataset}}
-          <div style="page-break-before:always;"></div>
-          <h2>Planned Research Outputs</h2>
-
-          {{#each dataset}}
-            <h3>{{title}}</h3>
-            <p>{{{description}}}</p>
-          {{/each}}
-
-          {{{researchOutputsAsTable dataset}}}
-
-          <hr class="bottom" />
-        {{/if}}
-      {{/if}}
 
       {{#if ${display.includeRelatedWorks}}}
         {{#if dmproadmap_related_identifiers}}

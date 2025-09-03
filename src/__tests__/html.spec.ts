@@ -84,43 +84,6 @@ describe("renderHtmlTemplate", () => {
     expect(html).toContain("Not answered");
   });
 
-  it("renders research outputs table with sensitive data answers", () => {
-    const html = renderHTML(display, margin, font, {
-      title: "Outputs Test",
-      dmp_id: { identifier: "id" },
-      contact: { name: "X", contact_id: { identifier: "y" }, dmproadmap_affiliation: { affiliation_id: { identifier: "id" }, name: "Affil" } },
-      contributor: [],
-      project: [],
-      dmproadmap_template: { title: "T" },
-      description: "D",
-      modified: "2024-01-01",
-      dataset: [
-        {
-          title: "Dataset A",
-          type: "dataset",
-          issued: "2024-01-01",
-          metadata: [{ metadata_standard_id: { identifier: "http://standard" } }],
-          sensitive_data: "yes",
-          personal_data: "no",
-          distribution: [
-            {
-              data_access: "open",
-              host: { url: "http://repo", title: "Repo" },
-              byte_size: 1024,
-              license: { license_ref: "http://license" },
-            },
-          ],
-        },
-      ],
-    });
-
-    expect(html).toContain("Dataset A");
-    expect(html).toContain("Yes"); // safeYesNoUnknown
-    expect(html).toContain("No");
-    expect(html).toContain("Repo");
-    expect(html).toContain("license");
-  });
-
   it("renders related works grouped by type", () => {
     const html = renderHTML(display, margin, font, {
       title: "Works Test",
