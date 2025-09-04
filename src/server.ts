@@ -180,8 +180,8 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
       case "docx":
         accept = DOCX_TYPE;
         break;
-      case "html":
-        accept = HTML_TYPE;
+      case "json":
+        accept = JSON_TYPE;
         break;
       case "pdf":
         accept = PDF_TYPE;
@@ -190,10 +190,10 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
         accept = TXT_TYPE;
         break;
       default:
-        accept = JSON_TYPE; // fallback
+        accept = HTML_TYPE; // fallback
     }
   } else {
-    accept = req.headers["accept"] || JSON_TYPE;
+    accept = req.headers["accept"] || HTML_TYPE;
   }
 
   // Get the query params or use defaults

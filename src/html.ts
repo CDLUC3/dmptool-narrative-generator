@@ -1,6 +1,6 @@
 import Handlebars from "handlebars";
 import pluralize from "pluralize";
-import { formatDate, safeNumber } from "./helper";
+import { formatDate } from "./helper";
 import {
   DisplayOptionsInterface,
   FontInterface,
@@ -16,17 +16,6 @@ import {
   TableAnswerType,
   TextAreaAnswerType
 } from "@dmptool/types";
-
-function safeYesNoUnknown(value: string): string {
-  switch (value?.toLowerCase()) {
-    case "yes":
-      return "Yes";
-    case "no":
-      return "No";
-    default:
-      return "Unknown";
-  }
-}
 
 // ---------------- Format an Answer as HTML ----------------
 function answerToHTML (json: AnyAnswerType): string {
@@ -174,13 +163,9 @@ Handlebars.registerHelper("doiForDisplay", function (doi: string): string {
 // TODO: Update the type here once the common standard is in @dmptool/types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("contactIdentifierForDisplay", function (contactId: any): string {
-  if (contactId?.type === "url" && contactId?.identifier) {
+  if (contactId?.type === "orcid" && contactId?.identifier) {
     const idForDisplay = contactId?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
     return `- <strong>ORCID:</strong> <a href="${contactId?.identifier}" target="_blank">${idForDisplay}</a>`
-  } else if (contactId?.identifier?.includes("@")) {
-    return `- <strong>Email:</strong> <a href="mailto:${contactId?.identifier}">${contactId?.identifier}</a>`
-  } else {
-    return contactId?.identifier ? `- ${contactId?.identifier}` : "";
   }
 });
 
@@ -221,10 +206,38 @@ Handlebars.registerHelper("relatedWorksByType", function(works: any[]): string {
   return out.length === 0 ? "None specified" : `<ul>${out.join("")}</ul>`;
 });
 
+// ---------------- Affiliation helper ----------------
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Handlebars.registerHelper("affiliationForDisplay", function(affiliation: any): string {
+  return affiliation?.affiliation_id?.identifier ? `<a href="${affiliation.affiliation_id.identifier}" target="_blank">${affiliation.name}</a>` : affiliation?.name;
+});
+
+// ---------------- Copyright info based on the DMP visibility ----------------
+Handlebars.registerHelper("copyrightForDisplay", function(visibility: string): string {
+  if (visibility?.toLowerCase()?.trim() === "public") {
+    return `
+      The above plan creator(s) have agreed that others may use as much of the text of this
+      plan as they would like in their own plans, and customize it as necessary. You do not
+      need to credit the creator(s) as the source of the language used, but using any of the
+      plan's text does not imply that the creator(s) endorse, or have any relationship to,
+      your project or proposal`
+  } else {
+    return `
+      This document is intended for internal use only. You may share it with colleagues at
+      your organization, but it should not be shared outside the organization without prior
+      written permission from the plan creator(s). In accordance with service terms, system
+      administrators at the CDL and authorized users at your home institution may also access
+      this document for specific purposes (e.g., system maintenance, compliance tracking, or
+      service assessment). Beyond these cases, the contents of this document will not be
+      accessed, used, or shared without permission.`
+  }
+});
+
 // ---------------- Funder and Project helpers ----------------
 // TODO: Update the type here once the common standard is in @dmptool/types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("funders", function(project: any): string {
+Handlebars.registerHelper("fundersForDisplay", function(project: any): string {
   let funding = project.map((project) => project.funding).flat();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   funding = funding.filter((fund: any) => fund !== null && fund !== undefined);
@@ -253,6 +266,52 @@ Handlebars.registerHelper("formatAnswer", function (json: AnyAnswerType): string
   return answerToHTML(json);
 });
 
+Handlebars.registerHelper("questionAnswerForDisplay", function (question: string, answer: AnyAnswerType, includeQs: boolean, includeUnanswered: boolean): string {
+  let answered = false;
+
+  // Determine if the answer is empty based on the type
+  if (answer?.type !== undefined && answer?.type !== null) {
+    switch (answer.type) {
+      case "boolean":
+        answered = true
+        break;
+
+      case "currency":
+      case "number":
+        answered = answer.answer !== undefined;
+        break;
+
+      case "dateRange":
+      case "numberRange":
+        answered = answer.answer.start !== undefined || answer.answer.end !== undefined;
+        break;
+
+      case "checkBoxes":
+      case "multiselectBox":
+        answered = Array.isArray(answer.answer) && answer.answer.length > 0;
+        break;
+
+      case "affiliationSearch":
+        answered = answer.answer?.affiliationId !== undefined || answer.answer?.affiliationName !== undefined;
+        break;
+
+      default:
+        answered = answer?.answer?.toString()?.trim()?.length > 0;
+        break;
+    }
+  }
+
+  // If the question was not answered and we are not supposed to return unanswered questions
+  if (!answered && !includeUnanswered) return "";
+
+  const qText = includeQs ? `<strong>${question}</strong>` : "";
+  const aText = answered
+    ? answerToHTML(answer)
+    : (includeUnanswered ? "<p>Not answered</p>" : "");
+
+  return `<div class="question">${qText}${aText}</div>`;
+});
+
 // ---------------- Render the full HTML doc ----------------
 export function renderHTML(
   display: DisplayOptionsInterface,
@@ -278,12 +337,6 @@ export function renderHTML(
           font-family: ${font?.fontFamily};
           font-size: ${font?.fontSize};
           line-height: ${font?.lineHeight}%;
-        }
-        .break-after {
-          page-break-after: always;
-        }
-        .break-before {
-          page-break-before: always;
         }
         h1 {
           font-size: 1.4em;
@@ -334,17 +387,19 @@ export function renderHTML(
     </head>
     <body>
       {{#if ${display.includeCoverPage}}}
-        <h1>{{title}}</h1>
+
+        <h1>Plan Overview</h1>
         <hr>
-        <h2>Plan Overview</h2>
         <div class="cover-page">
           <p class="header">
             <em>A Data Management Plan created using the DMP Tool</em>
           </p>
-          <p>
-            <b>DMP ID:</b>
-            <a href="{{dmp_id.identifier}}" target="_blank">{{doiForDisplay dmp_id.identifier}}</a>
-          </p>
+          {{#if registered}}
+            <p>
+              <b>DMP ID:</b>
+              <a href="{{dmp_id.identifier}}" target="_blank">{{doiForDisplay dmp_id.identifier}}</a>
+            </p>
+          {{/if}}
           <p>
             <b>Title: </b>{{title}}
           </p>
@@ -352,16 +407,13 @@ export function renderHTML(
             <strong>Creator:</strong> {{contact.name}} {{{contactIdentifierForDisplay contact.contact_id}}}
           </p>
           <p>
-            <b>Affiliation: </b><a href="{{contact.dmproadmap_affiliation.affiliation_id.identifier}}" target="_blank">{{contact.dmproadmap_affiliation.name}}</a>
+            <strong>Affiliation:</strong> {{{affiliationForDisplay contact.dmproadmap_affiliation}}}
           </p>
           <p>
-            <b>Principal Investigator: </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/investigation" contributor}}}
+            <b>Principal Investigator(s): </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/investigation" contributor}}}
           </p>
           <p>
-            <b>Data Manager: </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/data-curation" contributor}}}
-          </p>
-          <p>
-            <b>Funder: </b>{{{funders project}}}
+            <b>Funder: </b>{{{fundersForDisplay project}}}
           </p>
           <p>
             <b>DMP Tool Template: </b>{{dmproadmap_template.title}}
@@ -379,37 +431,27 @@ export function renderHTML(
             <b>End date: </b>{{displayProjectEndDate project}}
           </p>
           <p>
-            <b>Last modified: </b>{{formatDate modified}}
+            <strong>Copyright information:</strong> {{{copyrightForDisplay dmproadmap_privacy}}}
           </p>
         </div>
         <hr class="bottom" />
+
+        <div class="page-break" style="page-break-before: always;"></div>
       {{/if}}
 
-      <div style="page-break-before:always;"></div>
+
       <h1>{{title}}</h1>
-      <hr>
 
       {{#if dmproadmap_narrative.sections}}
         {{#each dmproadmap_narrative.sections}}
           <div class="section">
             {{#if ${display.includeSectionHeadings}}}
-              <h3>{{section_title}}</h3>
-              {{#if section_description}}
-                <p>{{{section_description}}}</p>
-              {{/if}}
+              <h2>{{section_title}}</h2>
+              <hr>
             {{/if}}
             {{#if questions}}
               {{#each questions}}
-                <div class="question">
-                  {{#if ${display.includeQuestionText}}}
-                    <h4>{{{question_text}}}</h4>
-                  {{/if}}
-                  {{#if answer_json}}
-                    {{{formatAnswer answer_json}}}
-                  {{else if ${display.includeUnansweredQuestions}}}
-                    <p>Not answered</p>
-                  {{/if}}
-                </div>
+                {{{questionAnswerForDisplay question_text answer_json ${display.includeQuestionText} ${display.includeUnansweredQuestions}}}}
               {{/each}}
               </p>
             {{/if}}
@@ -420,11 +462,12 @@ export function renderHTML(
 
       {{#if ${display.includeRelatedWorks}}}
         {{#if dmproadmap_related_identifiers}}
+          <div class="page-break" style="page-break-before: always;"></div>
+
           <div style="page-break-before:always;"></div>
+          <h1>{{title}}</h1>
           <h2>Related Works</h2>
-
           {{{relatedWorksByType dmproadmap_related_identifiers}}}
-
           <hr class="bottom" />
         {{/if}}
       {{/if}}

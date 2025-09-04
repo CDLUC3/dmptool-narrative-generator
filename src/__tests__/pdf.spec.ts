@@ -43,6 +43,7 @@ describe("renderPdfWithPuppeteer", () => {
   it("launches puppeteer with expected options", async () => {
     await renderPDF("<h1>Hello</h1>");
     expect(puppeteer.launch).toHaveBeenCalledWith({
+      executablePath: "/usr/bin/chromium",
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });

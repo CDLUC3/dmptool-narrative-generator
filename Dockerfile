@@ -34,6 +34,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Tell Puppeteer to use the system-installed Chromium binary!
+# This prevents it from downloading its own, which may be of the wrong architecture.
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 # Install all deps
 COPY package*.json ./
 RUN npm ci

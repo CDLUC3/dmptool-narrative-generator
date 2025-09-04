@@ -33,8 +33,7 @@ import { renderPDF } from "../pdf";
 import { renderTXT } from "../txt";
 
 import app, { JWTAccessToken } from "../server";
-import {getMockGetDMPResponse, mockToken, setMockGetDMPResponse} from "./setup"; // ensure the file does `export default app;`
-import { AccessibleDMP } from "../mysql";
+import { mockToken } from "./setup"; // ensure the file does `export default app;`
 
 const baseTokenParams: JWTAccessToken = {
   id: 123,
@@ -82,11 +81,11 @@ describe("server endpoints", () => {
     expect(res.text).toBe("ok");
   });
 
-  it("defaults to JSON when no Accept header is provided", async () => {
+  it("defaults to HTML when no Accept header is provided", async () => {
     const res = await request(app).get("/dmps/foo/narrative");
     expect(getDMP).toHaveBeenCalled();
-    expect(renderHTML).not.toHaveBeenCalled();
-    expect(res.header["content-type"]).toContain("application/json");
+    expect(renderHTML).toHaveBeenCalled();
+    expect(res.header["content-type"]).toContain("text/html");
   });
 
   it("applies query params via prepareOptions indirectly", async () => {

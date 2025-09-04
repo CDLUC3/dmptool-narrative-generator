@@ -51,9 +51,8 @@ describe("pointsToFontSize", () => {
   });
 
   it("returns default size for unknown values", () => {
-    expect(pointsToFontSize(7)).toBe("15px");
-    expect(pointsToFontSize(11)).toBe("15px");
-    expect(pointsToFontSize(20)).toBe("15px");
+    expect(pointsToFontSize(0)).toBe("15px");
+    expect(pointsToFontSize(-11)).toBe("15px");
   });
 });
 

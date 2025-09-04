@@ -42,20 +42,11 @@ export const getDMP = async (
 ): Promise<any | undefined> => {
   let params = {};
 
-  if (version) {
-    params = {
-      KeyConditionExpression: "PK = :pk and SK = :sk",
-      ExpressionAttributeValues: {
-        ":pk": { S: dmpIdToPK(dmpId) },
-        ":sk": { S: versionToSK(version) }
-      }
-    }
-  } else {
-    params = {
-      KeyConditionExpression: "PK = :pk",
-      ExpressionAttributeValues: {
-        ":pk": { S: dmpIdToPK(dmpId) }
-      }
+  params = {
+    KeyConditionExpression: "PK = :pk and SK = :sk",
+    ExpressionAttributeValues: {
+      ":pk": { S: dmpIdToPK(dmpId) },
+      ":sk": { S: versionToSK(version) }
     }
   }
 

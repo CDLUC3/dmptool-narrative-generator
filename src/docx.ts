@@ -1,7 +1,30 @@
-import HTMLtoDOCX from "html-to-docx";
+import HtmlToDocx from "@turbodocx/html-to-docx";
 import { FontInterface, MarginInterface } from "./server";
 import { Logger } from "pino";
 import { prepareObjectForLogs } from "./logger";
+
+// Convert millimeters to TWIPs (Twentieth of a Point)
+function mmToTwip (mm: number): number {
+  if (mm || mm <= 0) return 0;
+
+  // Convert mm to TWIP
+  return Math.round((mm / 25.4) * 1440);
+}
+
+// Convert pixels to HIP (Half of a Point)
+function pxToHip (px: number): number {
+  if (px || px <= 0) return 0;
+
+  // Convert pixels to points
+  const pts = (px / 96) * 72;
+  // Then convert points to HIP
+  return Math.round(pts * 2); // 1 pt = 2 HIP
+}
+
+enum orientations {
+  portrait = "portrait",
+  landscape = "landscape"
+}
 
 export async function renderDOCX(
   requestLogger: Logger,
@@ -12,20 +35,35 @@ export async function renderDOCX(
 ): Promise<Buffer> {
   const documentOptions = {
     title,
-    orientation: 'portrait', // or 'landscape'
+    orientation: orientations.portrait,
     margins: {
-      top: margin.marginTop, // in TWIP, or use '1in', '2.54cm', '96px'
-      right: margin.marginRight,
-      bottom: margin.marginBottom,
-      left: margin.marginLeft,
+      top: mmToTwip(margin.marginTop),
+      right: mmToTwip(margin.marginRight),
+      bottom: mmToTwip(margin.marginBottom),
+      left: mmToTwip(margin.marginLeft),
+    },
+    pageSize: {
+      width: 12240, // Letter width in TWIP
+      height: 15840 // Letter height in TWIP
     },
     pageNumber: true,
-    // font: font.fontFamily,
-    // fontSize: font.fontSize,
+    font: font.fontFamily,
+    fontSize: pxToHip(Number(font.fontSize.replace("px", ""))),
   };
 
   try {
-    return await HTMLtoDOCX(html, documentOptions);
+    const doc: ArrayBuffer | Buffer | Blob = await HtmlToDocx(html, null, documentOptions);
+
+    // The HtmlToDocx can return one of three types but we need it to be a Buffer
+    if (doc instanceof Buffer) {
+      return doc;
+    } else if (doc instanceof ArrayBuffer) {
+      // This is the key conversion step.
+      return Buffer.from(doc);
+    } else if (doc instanceof Blob) {
+      const arrayBuffer = await doc.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    }
   } catch (err) {
     const msg = "Unable to render DOCX."
     requestLogger.error(prepareObjectForLogs({ title, margin, font, err, html }), msg);

@@ -135,7 +135,6 @@ export class MySQLConnection implements DatabaseConnection {
   }
 
   // TODO: Update this to use the type once @dmptool/types supports the common standard
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public async getUserDMPs(requestLogger: Logger, token: JWTAccessToken): Promise<AccessibleDMP[]> {
     // If there is no token bail out.
     if (!token?.email) return [];
