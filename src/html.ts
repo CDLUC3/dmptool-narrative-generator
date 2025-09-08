@@ -416,7 +416,7 @@ export function renderHTML(
             <b>Funder: </b>{{{fundersForDisplay project}}}
           </p>
           <p>
-            <b>DMP Tool Template: </b>{{dmproadmap_template.title}}
+            <b>DMP Tool Template: </b>{{dmproadmap_narrative.template_title}} - {{dmproadmap_narrative.template_version}}
           </p>
           <p>
             <b>Project abstract: </b>
