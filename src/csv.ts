@@ -13,35 +13,35 @@ function answerToCSV (json: AnyAnswerType): string | number | boolean {
   let answer: string | number | boolean;
   // Special handling for certain answer types
   switch (json?.type as string) {
-    case "textArea":
+    case "textArea": {
       const tAnswer = json.answer as TextAreaAnswerType["answer"];
       answer = tAnswer.replace(/<[^>]*>/g, "");
       break;
-
-    case "dateRange":
+    }
+    case "dateRange": {
       const drAnswer = json.answer as DateRangeAnswerType["answer"];
       answer = `${formatDate(drAnswer.start)} to ${formatDate(drAnswer.end)}`;
       break;
-
-    case "numberRange":
+    }
+    case "numberRange": {
       const nrAnswer = json.answer as NumberRangeAnswerType["answer"];
       answer = `${nrAnswer.start} to ${nrAnswer.end}`;
       break;
-
+    }
     case "checkBoxes":
-    case "multiselectBox":
+    case "multiselectBox": {
       if (Array.isArray(json.answer) && json.answer.length > 0) {
-          answer = json.answer.join("; ");
+        answer = json.answer.join("; ");
       }
       break;
-
-    case "affiliationSearch":
+    }
+    case "affiliationSearch": {
       const data = json.answer as AffiliationSearchAnswerType["answer"];
       answer = data?.affiliationId ? `${data.affiliationName} (${data.affiliationId})` : data.affiliationName;
       break;
-
-    // case "table":
-      // return JSON.stringify(json.answer);
+    }
+    case "table":
+      return JSON.stringify(json.answer);
 
     default:
       answer = json?.answer as string | number | boolean | undefined;
@@ -50,9 +50,12 @@ function answerToCSV (json: AnyAnswerType): string | number | boolean {
   return answer ?? '';
 }
 
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function renderCSV(display: DisplayOptionsInterface, data: any): string {
   const columns: string[] = [];
-  let rows: any[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = [];
 
   // If there is narrative content
   if (data.dmproadmap_narrative?.sections) {
@@ -66,7 +69,10 @@ export function renderCSV(display: DisplayOptionsInterface, data: any): string {
     columns.push('Answer');
 
     // Define the rows
+    // TODO: Update the type here once the common standard is in @dmptool/types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data.dmproadmap_narrative?.sections?.map((section: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return section.questions?.map((question: any) => {
         const row = [];
         const answer = answerToCSV(question.answer_json);

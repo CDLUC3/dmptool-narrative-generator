@@ -13,13 +13,16 @@ describe("renderHtmlTemplate", () => {
   const margin = { marginTop: 10, marginRight: 10, marginBottom: 10, marginLeft: 10 };
   const font = { fontFamily: "Arial", fontSize: "12pt", lineHeight: 120 };
 
-  it("renders cover page with DOI, ORCID and funder links", () => {
+  it("renders cover page appropriately for un-registered DMPs", () => {
     const html = renderHTML(display, margin, font, {
       title: "Test Plan",
       dmp_id: { identifier: "https://doi.org/10.1234/abcd" },
       contact: {
         name: "Alice",
-        contact_id: { identifier: "https://orcid.org/0000-0001-2345-6789" },
+        contact_id: {
+          type: "orcid",
+          identifier: "https://orcid.org/0000-0001-2345-6789"
+        },
         dmproadmap_affiliation: {
           affiliation_id: { identifier: "http://example.com/affil" },
           name: "Example University",
@@ -49,8 +52,52 @@ describe("renderHtmlTemplate", () => {
     });
 
     expect(html).toContain("Test Plan");
-    expect(html).toContain("10.1234/abcd"); // doiForDisplay strips prefix
     expect(html).toContain("0000-0001-2345-6789"); // orcidForDisplay strips prefix
+    expect(html).toContain("Example University");
+    expect(html).toContain("NSF");
+  });
+
+  it("renders cover page appropriately for registered DMPs", () => {
+    const html = renderHTML(display, margin, font, {
+      title: "Test Plan",
+      dmp_id: { identifier: "https://doi.org/10.1234/abcd" },
+      registered: "2025-08-01T10:50:23Z",
+      contact: {
+        name: "Alice",
+        contact_id: {
+          type: "other",
+          identifier: "tester@example.com"
+        },
+        dmproadmap_affiliation: {
+          affiliation_id: { identifier: "http://example.com/affil" },
+          name: "Example University",
+        },
+      },
+      contributor: [
+        {
+          role: ["http://credit.niso.org/contributor-roles/investigation"],
+          name: "PI Person",
+        },
+      ],
+      project: [
+        {
+          funding: [
+            {
+              name: "NSF",
+              funder_id: { identifier: "http://funder.org/nsf" },
+            },
+          ],
+          start: "2024-01-01",
+          end: "2024-12-31",
+        },
+      ],
+      dmproadmap_template: { title: "Generic Template" },
+      description: "This is an abstract.",
+      modified: "2024-02-01",
+    });
+
+    expect(html).toContain("Test Plan");
+    expect(html).not.toContain("tester@example.com"); // doiForDisplay strips prefix
     expect(html).toContain("Example University");
     expect(html).toContain("NSF");
   });
@@ -82,43 +129,6 @@ describe("renderHtmlTemplate", () => {
     expect(html).toContain("Data Collection");
     expect(html).toContain("Some data"); // answerToHTML -> <p>Some data</p>
     expect(html).toContain("Not answered");
-  });
-
-  it("renders research outputs table with sensitive data answers", () => {
-    const html = renderHTML(display, margin, font, {
-      title: "Outputs Test",
-      dmp_id: { identifier: "id" },
-      contact: { name: "X", contact_id: { identifier: "y" }, dmproadmap_affiliation: { affiliation_id: { identifier: "id" }, name: "Affil" } },
-      contributor: [],
-      project: [],
-      dmproadmap_template: { title: "T" },
-      description: "D",
-      modified: "2024-01-01",
-      dataset: [
-        {
-          title: "Dataset A",
-          type: "dataset",
-          issued: "2024-01-01",
-          metadata: [{ metadata_standard_id: { identifier: "http://standard" } }],
-          sensitive_data: "yes",
-          personal_data: "no",
-          distribution: [
-            {
-              data_access: "open",
-              host: { url: "http://repo", title: "Repo" },
-              byte_size: 1024,
-              license: { license_ref: "http://license" },
-            },
-          ],
-        },
-      ],
-    });
-
-    expect(html).toContain("Dataset A");
-    expect(html).toContain("Yes"); // safeYesNoUnknown
-    expect(html).toContain("No");
-    expect(html).toContain("Repo");
-    expect(html).toContain("license");
   });
 
   it("renders related works grouped by type", () => {

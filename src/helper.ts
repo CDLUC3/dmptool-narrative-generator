@@ -17,23 +17,10 @@ export function safeBoolean(value: string, fallback: boolean): boolean | undefin
 }
 
 export function pointsToFontSize(points: number): string {
-  switch (points) {
-    case 8:
-      return '11px';
-    case 9:
-      return '12px';
-    case 10:
-      return '13px';
-    case 12:
-      return '16px';
-    case 13:
-      return '17px';
-    case 14:
-      return '19px';
+  if (!points || points <= 0) return "15px";
 
-    default:
-      return '15px';
-  }
+  // Convert the pt value to px
+  return `${Math.round((points / 72) * 96)}px`;
 }
 
 // ---------------- Format ISO dates ----------------
@@ -55,7 +42,7 @@ export function formatDate(date: string, includeDay = true): string {
       })
     }
     return dateOut === 'Invalid Date' ? 'None specified' : dateOut;
-  } catch (err) {
+  } catch {
     return 'None specified';
   }
 }

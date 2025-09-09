@@ -27,21 +27,15 @@ phases:
       # commit ID of the source.
       - echo Logging in to Amazon ECR ...
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $SHORT_ECR_URI
-      - IMAGE_TAG=${COMMIT_HASH:=narrative-gen-latest}
+      - IMAGE_TAG=${COMMIT_HASH:=narrative-generator-latest}
   build:
     commands:
       - echo "Running in ${NODE_ENV} - started on `date`"
       - cd $CODEBUILD_SRC_DIR
 
-      # Ensure we're running in CI mode nd that it always installs the devDependencies for our tests
-      - echo "production=true" >> .npmrc
-
-      # Build the app
-      - npm build
-
       # Build the Docker image
       - echo Building the Docker image...
-      - docker build -f Dockerfile -t $SHORT_ECR_URI:narrative-gen-latest .
+      - docker build -f Dockerfile.aws -t $SHORT_ECR_URI:narrative-gen-latest .
       - docker tag $ECR_REPOSITORY_URI:narrative-gen-latest $SHORT_ECR_URI:$IMAGE_TAG
   post_build:
     commands:

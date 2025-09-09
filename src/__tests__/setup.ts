@@ -1,4 +1,6 @@
 import { JWTAccessToken } from "../server";
+import {Logger} from "pino";
+import {AccessibleDMP} from "../mysql";
 
 // Mock the logger
 jest.mock('../logger', () => {
@@ -28,7 +30,13 @@ jest.mock('../dynamo', () => {
   const original = jest.requireActual('../dynamo') as typeof import('../dynamo');
   return {
     ...original,
-    getDMP: jest.fn().mockImplementation(async (requestLogger: any, dmpId: string, version: string | null) => {
+    getConnection: jest.fn().mockImplementation(async () => {
+      return {
+        release: jest.fn().mockImplementation(async () => { return true }),
+        query: jest.fn().mockImplementation(async () => { return { Items: [] } }),
+      }
+    }),
+    getDMP: jest.fn().mockImplementation(async (requestLogger: Logger, dmpId: string, version: string | null) => {
       return {
         dmpId,
         version,
@@ -40,7 +48,19 @@ jest.mock('../dynamo', () => {
       }
     })
   }
-})
+});
+
+// Setup a getter and setter for the mock response from the MySQL getDMP function
+let mockGetDMPResponse: AccessibleDMP[] = [];
+export const setMockGetDMPResponse = (dmps: AccessibleDMP[]) => {
+  mockGetDMPResponse = dmps;
+}
+export const getMockGetDMPResponse = () => {
+  return mockGetDMPResponse;
+}
+
+// Mock the MySQL connection
+jest.mock('../mysql');
 
 // Generate a mock JWToken
 export const mockToken = (
@@ -54,7 +74,6 @@ export const mockToken = (
     affiliationId: args?.affiliationId ?? "https://ror.org/test",
     languageId: "en-US",
     role: args?.role ?? "RESEARCHER",
-    dmpIds: args?.dmpIds ?? [],
     jti: "456347456745677845677846",
     expiresIn: 12345,
   }
