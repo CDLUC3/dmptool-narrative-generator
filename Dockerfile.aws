@@ -23,6 +23,7 @@ FROM public.ecr.aws/docker/library/node:lts-slim AS runner
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
+    curl \
     nodejs \
     npm \
     chromium \
