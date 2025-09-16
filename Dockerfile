@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-liberation \
     fonts-noto-cjk \
     fonts-roboto \
+    fonts-croscore \
     libasound2 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
