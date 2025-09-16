@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+import cookieParser from "cookie-parser";
 import { Logger } from 'pino';
 import express, { Response } from "express";
 import { JwtPayload } from 'jsonwebtoken';
@@ -79,7 +80,7 @@ function prepareOptions(params: any): OptionsInterface {
       includeResearchOutputs: safeBoolean(params?.includeResearchOutputs as string, true),
       includeRelatedWorks: safeBoolean(params?.includeRelatedWorks as string, true),
     },
-    margin : {
+    margin: {
       marginTop: safeNumber(params?.marginTop as string, 76),
       marginRight: safeNumber(params?.marginRight as string, 96),
       marginBottom: safeNumber(params?.marginBottom as string, 76),
@@ -107,8 +108,22 @@ const auth = expressjwt({
 
     const headerCookie = req.headers.cookie;
     if (headerCookie) {
-      const parts = headerCookie.split('=');
-      return parts[0] === 'dmspt' ? parts[1] : undefined;
+      const cookies = headerCookie.split('; ').map(cookie => cookie.trim());
+
+      // Cookie headers can contain multiple cookies separated by semicolons
+      for (const cookie of cookies) {
+        const [name, ...valueParts] = cookie.split('=');
+        if (name === 'dmspt') {
+          return valueParts.join('='); // Rejoin in case the value had '='
+        }
+      }
+
+      // Only check Authorization header if no dmspt cookie was found
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.substring(7);
+      }
+
     }
   },
 });
@@ -134,26 +149,64 @@ function hasPermissionToDownloadNarrative(data: any, token: JWTAccessToken | nul
 
 // ----------------- Initialize the server  -----------------
 const app = express();
+app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
+
+
+// Add this function to parse the Accept header properly
+function getPreferredFormat(acceptHeader: string | undefined): string {
+  if (!acceptHeader) return PDF_TYPE;
+
+  // Split by comma and check each media type
+  const mediaTypes = acceptHeader.toLowerCase().split(',').map(type => type.trim().split(';')[0]);
+
+  // Check in order of preference
+  if (mediaTypes.includes(HTML_TYPE)) return HTML_TYPE;
+  if (mediaTypes.includes(PDF_TYPE)) return PDF_TYPE;
+  if (mediaTypes.includes(CSV_TYPE)) return CSV_TYPE;
+  if (mediaTypes.includes(DOCX_TYPE)) return DOCX_TYPE;
+  if (mediaTypes.includes(TXT_TYPE)) return TXT_TYPE;
+
+  // Default to PDF if no match
+  return PDF_TYPE;
+}
+
 
 // ----------------- Main entrypoint to fetch a DMP narrative  -----------------
 // Matches patterns like:
 //   /dmps/11.11111/A1B2C3/narrative
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
-app.get("/dmps/{*splat}/narrative", auth, async (req: Request, res: Response) => {
+app.get("/dmps/:prefix/:suffix/narrative", auth, async (req, res) => {
   // Generate a unique requestId that we can use to tie log messages together
   const requestId: string = [...Array(12)].map(() => {
     return Math.floor(Math.random() * 16).toString(16)
   }).join('');
 
-  // Get the format the user wants the narrative document in
-  const accept = req.headers["accept"] || PDF_TYPE;
+  // Get format from query param first, then Accept header
+  const formatParam = req.query.format as string;
+  let accept: string;
+
+  if (formatParam) {
+    switch (formatParam.toLowerCase()) {
+      case 'html': accept = HTML_TYPE; break;
+      case 'pdf': accept = PDF_TYPE; break;
+      case 'csv': accept = CSV_TYPE; break;
+      case 'docx': accept = DOCX_TYPE; break;
+      case 'txt': accept = TXT_TYPE; break;
+      default: accept = getPreferredFormat(req.headers["accept"] as string);
+    }
+  } else {
+    accept = getPreferredFormat(req.headers["accept"] as string);
+  }
+
+
+
   // Get the query params or use defaults
   const { version, display, margin, font } = prepareOptions(req.query);
   // Get the JWT if there is one
-  const token = req.auth as JWTAccessToken
+  const token = (req as Request & { auth?: JWTAccessToken }).auth;
   // Get the DMP id from the path
-  const dmpId = req.params.splat.toString().replace(",", "/");
+  const dmpId = `${req.params.prefix}/${req.params.suffix}`; // "10.11111/2A3B4C"
 
   const requestLogger: Logger = initLogger(
     logger,                         // Base logger

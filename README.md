@@ -98,9 +98,10 @@ curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23
 
 To run this service locally, you must: 
 - Have the [DMP Tool UI](https://github.com/CDLUC3/dmsp_frontend_prototype) docker environment running on your local machine. This service will allow you to login (obtain an auth cookie) and create/update DMP data which can then be used to generate narratives.
-- Have the [DMP Tool Apollo server](https://github.com/CDLUC3/dmsp_backend_prototype) docker environment running on your local machine. This service has a local DynamoDB Table with DMP records available for query.
+- Make sure you create a `.env` file and assign correct values to the variables. Copy from `.env.example`
+- Have the [DMP Tool Apollo server](https://github.com/CDLUC3/dmsp_backend_prototype) docker environment running on your local machine. This service has a local DynamoDB Table with DMP records available for query. Make sure you use the correct endpoint for your local DynamoDB container.
 - Run `npm install` and then `npm run dev`
-- Send queries to the local service at `http://localhost:3030/dmps/{dmpId}/narrative`
+- Send queries to the local service at `http://localhost:3030/dmps/{dmpId}/narrative?format=<html,pdf,csv,docx,txt>` if you are accessing this link directly without an `accept` header
 
 ## Testing
 
