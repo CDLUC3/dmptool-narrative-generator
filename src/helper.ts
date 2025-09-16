@@ -46,3 +46,16 @@ export function formatDate(date: string, includeDay = true): string {
     return 'None specified';
   }
 }
+
+export function getFontFamily(fontParam: string): string {
+  // Define available fonts with their CSS declarations
+  const availableFonts = {
+    'tinos': 'Tinos, serif',
+    'roboto': 'Roboto, sans-serif'
+  };
+
+  // Will convert to lowercase, trim whitespace, and remove quotes
+  const selectedFont = fontParam?.toLowerCase().trim().replace(/['"]/g, '') || 'tinos';
+
+  return availableFonts[selectedFont] || availableFonts['tinos'];
+}

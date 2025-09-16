@@ -46,7 +46,7 @@ The service supports the following query params which may be passed to help cont
   - **includeResearchOutputs** Whether the research outputs should appear as an appendix page
   - **includeRelatedWorks** Whther the related works should be included as an appendix page
 - Font:
-  - **fontFamily** The font family to use (default is `Tinos, serif`)
+  - **fontFamily** The font family to use (default is `Tinos, serif`, with the other option being `Roboto, sans-serif`)
   - **fontSize** The size of the font in points (default is `11`, `8` to `14` allowed)
   - **lineHeight** The height of a standard line (default is `120`)
 - Margin
@@ -117,6 +117,7 @@ curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23
 ## Development
 
 To run this service locally, you must: 
+- Use the `development` branch
 - Have the [DMP Tool UI](https://github.com/CDLUC3/dmsp_frontend_prototype) docker environment running on your local machine. This service will allow you to login (obtain an auth cookie) and create/update DMP data which can then be used to generate narratives.
 - Have the [DMP Tool Apollo server](https://github.com/CDLUC3/dmsp_backend_prototype) docker environment running on your local machine. This service has a local DynamoDB Table with DMP records available for query.
 - Run `npm install` and then `docker compose up`
