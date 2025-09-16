@@ -153,14 +153,14 @@ app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
 
 
-// Add this function to parse the Accept header properly
+// Parse the Accept header to determine the preferred format
 function getPreferredFormat(acceptHeader: string | undefined): string {
   if (!acceptHeader) return PDF_TYPE;
 
   // Split by comma and check each media type
   const mediaTypes = acceptHeader.toLowerCase().split(',').map(type => type.trim().split(';')[0]);
 
-  // Check in order of preference
+  // Check preference
   if (mediaTypes.includes(HTML_TYPE)) return HTML_TYPE;
   if (mediaTypes.includes(PDF_TYPE)) return PDF_TYPE;
   if (mediaTypes.includes(CSV_TYPE)) return CSV_TYPE;
