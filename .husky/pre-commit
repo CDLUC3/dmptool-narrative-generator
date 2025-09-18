@@ -1,0 +1,18 @@
+echo "Running ESLint scans..."
+npm run lint
+
+echo "Running Tests ..."
+npm test
+
+echo "Ensuring build compiles ..."
+npm run build
+
+echo "Running Trivy scans..."
+
+# Run Trivy to check for vulnerabilities in the filesystem
+trivy fs --exit-code 1 --skip-dirs docker/mysql --skip-dirs docker/mysql-bak --severity HIGH,CRITICAL . || {
+  echo "Trivy found high/critical vulnerabilities. Commit aborted."
+  exit 1
+}
+
+echo "Trivy scans passed. Continuing with commit."
