@@ -17,7 +17,7 @@
     "lint": "npx eslint . --ignore-pattern dist/",
     "test": "jest --coverage",
     "start": "npm run build && nodemon ./dist/server.js",
-    "prepare": "husky",
+    "prepare": "is-ci || npx husky install",
     "trivy-high": "./src/scripts/trivy-high.sh",
     "trivy-med": "./src/scripts/trivy-med.sh"
   },
