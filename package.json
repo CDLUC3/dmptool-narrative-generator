@@ -17,7 +17,9 @@
     "lint": "npx eslint . --ignore-pattern dist/",
     "test": "jest --coverage",
     "start": "npm run build && nodemon ./dist/server.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "trivy-high": "./src/scripts/trivy-high.sh",
+    "trivy-med": "./src/scripts/trivy-med.sh"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.873.0",
