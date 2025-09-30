@@ -39,7 +39,7 @@ describe("renderCsv + answerToCSV integration", () => {
       answer: { start: "2020-01-02", end: "2020-12-31" }
     });
     const csv = renderCSV(baseDisplay, data);
-    expect(csv).toMatch(/December.*2020 to December.*2020/);
+    expect(csv).toMatch(/January.*2020 to December.*2020/);
   });
 
   it("handles numberRange", () => {
