@@ -70,6 +70,7 @@ describe("logger module", () => {
     });
 
     it("returns base logger if child creation fails", () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
       const badLogger = {
         child: () => {
           throw new Error("child failed");
