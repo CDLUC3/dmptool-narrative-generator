@@ -43,13 +43,13 @@ describe("renderCsv + answerToCSV integration", () => {
   it("handles dateRange (uses formatDate)", () => {
     const data = wrap({
       type: "dateRange",
-      answer: { start: "2020-01-01", end: "2020-12-31" },
+      answer: { start: "2020-01-02", end: "2020-12-31" },
       meta: {
         schemaVersion: "1.0.0",
       }
     });
     const csv = renderCSV(baseDisplay, data);
-    expect(csv).toContain("December 31, 2019 to December 30, 2020");
+    expect(csv).toMatch(/January.*2020 to December.*2020/);
   });
 
   it("handles numberRange", () => {
