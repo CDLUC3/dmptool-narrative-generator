@@ -5,6 +5,12 @@
 # Skip the local enviornment file
 .env
 
+# Ignore test coverage reports
+coverage/
+
+# Ignore the distribution directory
+dist/
+
 # Skip dependency packages
 node_modules/
 
