@@ -1,9 +1,10 @@
 import puppeteer, { Browser, Page } from "puppeteer";
-import { Logger } from "pino";
 
 export async function renderPDF(html: string): Promise<Buffer> {
   // Launch headless chrome so we can convert the HTML into a PDF doc
   const browser: Browser = await puppeteer.launch({
+    // This path is where `apt-get` installs Chromium.
+    executablePath: '/usr/bin/chromium',
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });

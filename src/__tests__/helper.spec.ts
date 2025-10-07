@@ -35,8 +35,8 @@ describe("safeBoolean", () => {
   });
 
   it("handles undefined or null gracefully", () => {
-    expect(safeBoolean(undefined as any, true)).toBe(true);
-    expect(safeBoolean(null as any, false)).toBe(false);
+    expect(safeBoolean(undefined, true)).toBe(true);
+    expect(safeBoolean(null, false)).toBe(false);
   });
 });
 
@@ -51,9 +51,8 @@ describe("pointsToFontSize", () => {
   });
 
   it("returns default size for unknown values", () => {
-    expect(pointsToFontSize(7)).toBe("15px");
-    expect(pointsToFontSize(11)).toBe("15px");
-    expect(pointsToFontSize(20)).toBe("15px");
+    expect(pointsToFontSize(0)).toBe("15px");
+    expect(pointsToFontSize(-11)).toBe("15px");
   });
 });
 

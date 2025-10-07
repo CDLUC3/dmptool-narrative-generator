@@ -23,8 +23,9 @@
     "@aws-sdk/util-dynamodb": "^3.873.0",
     "@dmptool/types": "^1.2.3",
     "@elastic/ecs-pino-format": "^1.5.0",
+    "@turbodocx/html-to-docx": "^1.13.5",
+    "cookie-parser": "^1.4.7",
     "csv-stringify": "^6.6.0",
-    "docx": "^9.5.1",
     "domelementtype": "^2.3.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
@@ -32,6 +33,7 @@
     "handlebars": "^4.7.8",
     "htmlparser2": "^10.0.0",
     "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.4",
     "pino": "^9.9.0",
     "pluralize": "^8.0.0",
     "puppeteer": "^24.17.0"

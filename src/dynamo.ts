@@ -33,28 +33,20 @@ const tableName = process.env.DYNAMO_TABLE_NAME;
 // Fetch the specified DMP metadata record
 //   - Version is optional, if not provided ALL versions of the DMP will be returned
 //   - If you just want the latest version, use the DMP_LATEST_VERSION constant
-// TODO: Update this to use the common standard types when they are in @dmptool/types
 export const getDMP = async (
   requestLogger: Logger,
   dmpId: string,
   version: string | null
+  // TODO: Update the type here once the common standard is in @dmptool/types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any | undefined> => {
   let params = {};
 
-  if (version) {
-    params = {
-      KeyConditionExpression: "PK = :pk and SK = :sk",
-      ExpressionAttributeValues: {
-        ":pk": { S: dmpIdToPK(dmpId) },
-        ":sk": { S: versionToSK(version) }
-      }
-    }
-  } else {
-    params = {
-      KeyConditionExpression: "PK = :pk",
-      ExpressionAttributeValues: {
-        ":pk": { S: dmpIdToPK(dmpId) }
-      }
+  params = {
+    KeyConditionExpression: "PK = :pk and SK = :sk",
+    ExpressionAttributeValues: {
+      ":pk": { S: dmpIdToPK(dmpId) },
+      ":sk": { S: versionToSK(version) }
     }
   }
 

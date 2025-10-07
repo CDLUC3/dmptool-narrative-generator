@@ -1,6 +1,6 @@
 import Handlebars from "handlebars";
 import pluralize from "pluralize";
-import { formatDate, safeNumber } from "./helper";
+import { formatDate } from "./helper";
 import {
   DisplayOptionsInterface,
   FontInterface,
@@ -17,20 +17,9 @@ import {
   TextAreaAnswerType
 } from "@dmptool/types";
 
-function safeYesNoUnknown(value: string): string {
-  switch (value?.toLowerCase()) {
-    case "yes":
-      return "Yes";
-    case "no":
-      return "No";
-    default:
-      return "Unknown";
-  }
-}
-
 // ---------------- Format an Answer as HTML ----------------
 function answerToHTML (json: AnyAnswerType): string {
-  let out: string = "<p>Not yet answered.</p>";
+  let out = "<p>Not yet answered.</p>";
 
   // If the answer isn't a known type skip it
   if (!Object.keys(AnswerSchemaMap).includes(json['type'])) {
@@ -50,24 +39,27 @@ function answerToHTML (json: AnyAnswerType): string {
         break;
 
       case "checkBoxes":
-      case "multiselectBox":
+      case "multiselectBox": {
         if (Array.isArray(json.answer) && json.answer.length > 0) {
           const answers = json.answer.map((answer) => `<li>${answer}</li>`);
           out = `<ul>${answers.join("")}</ul>`;
         }
         break;
+      }
 
-      case "dateRange":
+      case "dateRange": {
         const drAnswer = json.answer as DateRangeAnswerType["answer"];
         out = `<p>${formatDate(drAnswer.start)} to ${formatDate(drAnswer.end)}</p>`;
         break;
+      }
 
-      case "numberRange":
+      case "numberRange": {
         const nrAnswer = json.answer as NumberRangeAnswerType["answer"];
         out = `<p>${nrAnswer?.start} to ${nrAnswer?.end}</p>`;
         break;
+      }
 
-      case "table":
+      case "table": {
         const tblAnswer = json as TableAnswerType;
         const cols = tblAnswer.columnHeadings;
         const rows = tblAnswer.answer;
@@ -84,7 +76,7 @@ function answerToHTML (json: AnyAnswerType): string {
           // Loop through each column and convert the entry to HTML based on its type
           const tds = row.columns.map((td) => {
             const tdAnswer = td as AnyAnswerType;
-            `<td>${answerToHTML(tdAnswer)}</td>`;
+            return `<td>${answerToHTML(tdAnswer)}</td>`;
           }).join("");
 
           return `<tr>${tds}</tr>`;
@@ -92,11 +84,13 @@ function answerToHTML (json: AnyAnswerType): string {
 
         out = `<table>${table}</table>`;
         break;
+      }
 
-      case "date":
+      case "date": {
         const dtAnswer = json.answer as DateAnswerType["answer"];
         out = `<p>${formatDate(dtAnswer)}</p>`;
         break;
+      }
 
       case "currency":
         out = `<p>$${json.answer.toLocaleString('en-US')}</p>`;
@@ -110,7 +104,7 @@ function answerToHTML (json: AnyAnswerType): string {
         out = json.answer ? "<p>Yes</p>" : "<p>No</p>";
         break;
 
-      case "affiliationSearch":
+      case "affiliationSearch": {
         const data = json.answer as AffiliationSearchAnswerType["answer"];
         if (data?.affiliationId) {
           out = `<p><a href="${data.affiliationId}" target="_blank">${data.affiliationName ?? data.affiliationId}</a></p>`;
@@ -118,6 +112,7 @@ function answerToHTML (json: AnyAnswerType): string {
           out = `<p>${data.affiliationName}</p>`;
         }
         break;
+      }
 
       case "url":
         out = `<p><a href="${json.answer}" target="_blank">${json.answer}</a></p>`;
@@ -137,15 +132,19 @@ function answerToHTML (json: AnyAnswerType): string {
 }
 
 // ---------------- Related works for a specific type ----------------
-function workTypeForDisplay(workType: string, pluralizeIt: boolean = true): string {
+function workTypeForDisplay(workType: string, pluralizeIt = true): string {
   // Capitalize the type name and replace underscores with spaces
   let typeLabel = workType.replace(/_/g, " ");
   typeLabel = pluralizeIt ? pluralize(typeLabel) : typeLabel;
   return `${typeLabel[0].toUpperCase()}${typeLabel.slice(1)}`;
 }
 
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function relatedWorksForType(workType: string, works: any[]): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const out: string[] = works.filter((work: any) => work.work_type.includes(workType))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((work: any) => {
       return work?.citation ? work.citation : `<a href="${work.identifier}" target="_blank">${work.identifier}</a>`;
     });
@@ -161,15 +160,24 @@ Handlebars.registerHelper("doiForDisplay", function (doi: string): string {
   return doi.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, "");
 });
 
-Handlebars.registerHelper("orcidForDisplay", function (orcid: string): string {
-  return orcid.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "");
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Handlebars.registerHelper("contactIdentifierForDisplay", function (contactId: any): string {
+  if (contactId?.type === "orcid" && contactId?.identifier) {
+    const idForDisplay = contactId?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
+    return `- <strong>ORCID:</strong> <a href="${contactId?.identifier}" target="_blank">${idForDisplay}</a>`
+  }
 });
 
 // ---------------- Group contributors by role ----------------
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("contributorsForRole", function(role: string, contributors: any[]): any {
   if (!Array.isArray(contributors) || contributors.length < 1) return [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const out: string[] = contributors.filter((contributor: any) => contributor.role.includes(role))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((contributor: any) => {
         return contributor?.contributor_id?.identifier ? `<a href="${contributor.contributor_id.identifier}" target="_blank">${contributor.name}</a>` : contributor.name;
     });
@@ -178,9 +186,12 @@ Handlebars.registerHelper("contributorsForRole", function(role: string, contribu
 });
 
 // ---------------- Group related works by type ----------------
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("relatedWorksByType", function(works: any[]): string {
   if (!Array.isArray(works) || works.length < 1) return "";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const workTypes: string[] = works.map((work: any) => work.work_type).flat();
 
   const out: string[] = [];
@@ -195,102 +206,110 @@ Handlebars.registerHelper("relatedWorksByType", function(works: any[]): string {
   return out.length === 0 ? "None specified" : `<ul>${out.join("")}</ul>`;
 });
 
-// ---------------- Research Outputs Table ----------------
-Handlebars.registerHelper("researchOutputsAsTable", function(outputs: any[]): string {
-  if (!Array.isArray(outputs) || outputs.length < 1) return "";
+// ---------------- Affiliation helper ----------------
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Handlebars.registerHelper("affiliationForDisplay", function(affiliation: any): string {
+  return affiliation?.affiliation_id?.identifier ? `<a href="${affiliation.affiliation_id.identifier}" target="_blank">${affiliation.name}</a>` : affiliation?.name;
+});
 
-  let hasDistributions = false;
-  const standardTHs: string[] = [
-      "<th>Title</th>",
-      "<th>Type</th>",
-      "<th>Anticipated release date</th>",
-      "<th>Metadata standard(s)</th>",
-      "<th>May contain sensitive data?</th>",
-      "<th>May contain PII?]</th>"
-  ];
-
-  const distrubtionTHs: string[] = [
-    "<th>Initial access level</th>",
-    "<th>Intended repository(ies)</th>",
-    "<th>Anticipated file size</th>",
-    "<th>License</th>",
-  ]
-
-  const trs: string[] = outputs.map((output: any) => {
-    const standards = Array.isArray(output.metadata) ? output.metadata.map((ms) => `<a href="${ms.metadata_standard_id.identifier}" target="_blank">${ms.metadata_standard_id.identifier}</a>`) : [];
-
-    const distributions = Array.isArray(output.distribution) ? output.distribution : [];
-    let distributionTds = [];
-
-    if (distributions.length > 1) {
-      hasDistributions = true;
-      // There are many distributions, so use bulleted lists
-      const accessLevels = distributions.map((d) => {
-        return `<li>${d.data_access ? `${d.data_access[0]}${d.data_access.slice(1)}` : 'Unspecified'}</li>`
-      });
-      const repos = distributions.map((d) => {
-        return `<li>${d.host ? `<a href="${d.host.url}" target="_blank">${d.host.title}</a>` : 'Unspecified'}</li>`
-      });
-      const sizes = distributions.map((d) => {
-        return `<li>${safeNumber(d.byte_size, 0)} bytes</li>`
-      });
-      const licenses = distributions.map((d) => {
-        return `<li>${d.license?.license_ref ? `<a href="${d.license?.license_ref}" target="_blank">${d.license?.license_ref}</a>` : 'Unspecified'}</li>`
-      });
-
-      distributionTds = [
-        `<td><ul>${accessLevels}</ul></td>`,
-        `<td><ul>${repos}</ul></td>`,
-        `<td><ul>${sizes}</ul></td>`,
-        `<td><ul>${licenses}</ul></td>`,
-      ];
-    } else if (distributions.length === 1) {
-      // There's only one distribution so no need to use a bulleted list
-      distributionTds = [
-        `<td>${distributions[0].data_access ? `${output.distribution[0].data_access[0]}${output.distribution[0].data_access.slice(1)}` : 'Unspecified'}</td>`,
-        `<td>${distributions[0].host ? `<a href="${output.distribution[0].host.url}" target="_blank">${output.distribution[0].host.title}</a>` : 'Unspecified'}</td>`,
-        `<td>${safeNumber(distributions[0].byte_size, 0)} bytes</td>`,
-        `<td>${distributions[0].license?.license_ref ? `<a href="${output.distribution[0].license?.license_ref}" target="_blank">${output.distribution[0].license?.license_ref}</a>` : 'Unspecified'}</td>`,
-      ];
-    }
-
-    return [
-      `<td>${output.title}</td>`,
-      `<td>${workTypeForDisplay(output.type, false)}</td>`,
-      `<td>${output.issued ? formatDate(output.issued) : "Unknown"}</td>`,
-      `<td>${standards.length > 1 ? `<ul>${standards.map((s) => `<li>${s}</li>`)}</ul>` : standards[0] ?? "Unknown"}</td>`,
-      `<td>${safeYesNoUnknown(output?.sensitive_data)}</td>`,
-      `<td>${safeYesNoUnknown(output?.personal_data)}</td>`,
-      ...distributionTds,
-    ].join("")
-  });
-
-  const ths = hasDistributions ? standardTHs.concat(distrubtionTHs) : standardTHs;
-  return `<table><tr>${ths.join("")}</tr>${trs.map((tr) => `<tr>${tr}</tr>`).join("")}</table>`;
+// ---------------- Copyright info based on the DMP visibility ----------------
+Handlebars.registerHelper("copyrightForDisplay", function(visibility: string): string {
+  if (visibility?.toLowerCase()?.trim() === "public") {
+    return `
+      The above plan creator(s) have agreed that others may use as much of the text of this
+      plan as they would like in their own plans, and customize it as necessary. You do not
+      need to credit the creator(s) as the source of the language used, but using any of the
+      plan's text does not imply that the creator(s) endorse, or have any relationship to,
+      your project or proposal`
+  } else {
+    return `
+      This document is intended for internal use only. You may share it with colleagues at
+      your organization, but it should not be shared outside the organization without prior
+      written permission from the plan creator(s). In accordance with service terms, system
+      administrators at the CDL and authorized users at your home institution may also access
+      this document for specific purposes (e.g., system maintenance, compliance tracking, or
+      service assessment). Beyond these cases, the contents of this document will not be
+      accessed, used, or shared without permission.`
+  }
 });
 
 // ---------------- Funder and Project helpers ----------------
-Handlebars.registerHelper("funders", function(project: any): string {
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Handlebars.registerHelper("fundersForDisplay", function(project: any): string {
   let funding = project.map((project) => project.funding).flat();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   funding = funding.filter((fund: any) => fund !== null && fund !== undefined);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return funding.map((fund: any) => {
     return fund?.funder_id?.identifier ? `<a href="${fund.funder_id.identifier}" target="_blank">${fund.name}</a>` : fund.name;
   }).join("; ");
 });
 
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("displayProjectStartDate", function(project: any): string {
   const dates: string[] = project.map((project) => formatDate(project.start, false)).flat();
   return dates.length === 0 ? "None specified" : dates.sort()[0];
 });
 
+// TODO: Update the type here once the common standard is in @dmptool/types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Handlebars.registerHelper("displayProjectEndDate", function (project: any): string {
   const dates: string[] = project.map((project) => formatDate(project.end, false)).flat();
   return dates.length === 0 ? "None specified" : dates.sort()[dates.length - 1];
 });
 
 // ---------------- Answer helpers ----------------
-Handlebars.registerHelper("formatAnswer", function (json: any): string {
+Handlebars.registerHelper("formatAnswer", function (json: AnyAnswerType): string {
   return answerToHTML(json);
+});
+
+Handlebars.registerHelper("questionAnswerForDisplay", function (question: string, answer: AnyAnswerType, includeQs: boolean, includeUnanswered: boolean): string {
+  let answered = false;
+
+  // Determine if the answer is empty based on the type
+  if (answer?.type !== undefined && answer?.type !== null) {
+    switch (answer.type) {
+      case "boolean":
+        answered = true
+        break;
+
+      case "currency":
+      case "number":
+        answered = answer.answer !== undefined;
+        break;
+
+      case "dateRange":
+      case "numberRange":
+        answered = answer.answer.start !== undefined || answer.answer.end !== undefined;
+        break;
+
+      case "checkBoxes":
+      case "multiselectBox":
+        answered = Array.isArray(answer.answer) && answer.answer.length > 0;
+        break;
+
+      case "affiliationSearch":
+        answered = answer.answer?.affiliationId !== undefined || answer.answer?.affiliationName !== undefined;
+        break;
+
+      default:
+        answered = answer?.answer?.toString()?.trim()?.length > 0;
+        break;
+    }
+  }
+
+  // If the question was not answered and we are not supposed to return unanswered questions
+  if (!answered && !includeUnanswered) return "";
+
+  const qText = includeQs ? `<strong>${question}</strong>` : "";
+  const aText = answered
+    ? answerToHTML(answer)
+    : (includeUnanswered ? "<p>Not answered</p>" : "");
+
+  return `<div class="question">${qText}${aText}</div>`;
 });
 
 // ---------------- Render the full HTML doc ----------------
@@ -298,7 +317,9 @@ export function renderHTML(
   display: DisplayOptionsInterface,
   margin: MarginInterface,
   font: FontInterface,
-  data: any // TODO: Set this to the common standard once we add it to @dmptool/types
+  // TODO: Update the type here once the common standard is in @dmptool/types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any
 ): string {
   const template = Handlebars.compile(`
   <html>
@@ -316,12 +337,6 @@ export function renderHTML(
           font-family: ${font?.fontFamily};
           font-size: ${font?.fontSize};
           line-height: ${font?.lineHeight}%;
-        }
-        .break-after {
-          page-break-after: always;
-        }
-        .break-before {
-          page-break-before: always;
         }
         h1 {
           font-size: 1.4em;
@@ -368,50 +383,40 @@ export function renderHTML(
           margin-left: 15px;
           margin-bottom: 10px;
         }
-        ul.research_output {
-          margin-bottom: 15px;
-        }
-        ul.research_output li {
-          margin-bottom: 5px;
-        }
-        ul.research_output li strong {
-          padding-right: 5px;
-        }
       </style>
     </head>
     <body>
       {{#if ${display.includeCoverPage}}}
-        <h1>{{title}}</h1>
+
+        <h1>Plan Overview</h1>
         <hr>
-        <h2>Plan Overview</h2>
         <div class="cover-page">
           <p class="header">
             <em>A Data Management Plan created using the DMP Tool</em>
           </p>
-          <p>
-            <b>DMP ID:</b>
-            <a href="{{dmp_id.identifier}}" target="_blank">{{doiForDisplay dmp_id.identifier}}</a>
-          </p>
+          {{#if registered}}
+            <p>
+              <b>DMP ID:</b>
+              <a href="{{dmp_id.identifier}}" target="_blank">{{doiForDisplay dmp_id.identifier}}</a>
+            </p>
+          {{/if}}
           <p>
             <b>Title: </b>{{title}}
           </p>
           <p>
-            <strong>Creator:</strong> {{contact.name}} - <strong>ORCID:</strong> <a href="{{contact.contact_id.identifier}}" target="_blank">{{orcidForDisplay contact.contact_id.identifier}}</a>
+            <strong>Creator:</strong> {{contact.name}} {{{contactIdentifierForDisplay contact.contact_id}}}
           </p>
           <p>
-            <b>Affiliation: </b><a href="{{contact.dmproadmap_affiliation.affiliation_id.identifier}}" target="_blank">{{contact.dmproadmap_affiliation.name}}</a>
+            <strong>Affiliation:</strong> {{{affiliationForDisplay contact.dmproadmap_affiliation}}}
           </p>
           <p>
-            <b>Principal Investigator: </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/investigation" contributor}}}
+            <b>Principal Investigator(s): </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/investigation" contributor}}}
           </p>
           <p>
-            <b>Data Manager: </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/data-curation" contributor}}}
+            <b>Funder: </b>{{{fundersForDisplay project}}}
           </p>
           <p>
-            <b>Funder: </b>{{{funders project}}}
-          </p>
-          <p>
-            <b>DMP Tool Template: </b>{{dmproadmap_template.title}}
+            <b>DMP Tool Template: </b>{{dmproadmap_narrative.template_title}} - {{dmproadmap_narrative.template_version}}
           </p>
           <p>
             <b>Project abstract: </b>
@@ -426,37 +431,27 @@ export function renderHTML(
             <b>End date: </b>{{displayProjectEndDate project}}
           </p>
           <p>
-            <b>Last modified: </b>{{formatDate modified}}
+            <strong>Copyright information:</strong> {{{copyrightForDisplay dmproadmap_privacy}}}
           </p>
         </div>
         <hr class="bottom" />
+
+        <div class="page-break" style="page-break-before: always;"></div>
       {{/if}}
 
-      <div style="page-break-before:always;"></div>
+
       <h1>{{title}}</h1>
-      <hr>
 
       {{#if dmproadmap_narrative.sections}}
         {{#each dmproadmap_narrative.sections}}
           <div class="section">
             {{#if ${display.includeSectionHeadings}}}
-              <h3>{{section_title}}</h3>
-              {{#if section_description}}
-                <p>{{{section_description}}}</p>
-              {{/if}}
+              <h2>{{section_title}}</h2>
+              <hr>
             {{/if}}
             {{#if questions}}
               {{#each questions}}
-                <div class="question">
-                  {{#if ${display.includeQuestionText}}}
-                    <h4>{{{question_text}}}</h4>
-                  {{/if}}
-                  {{#if answer_json}}
-                    {{{formatAnswer answer_json}}}
-                  {{else if ${display.includeUnansweredQuestions}}}
-                    <p>Not answered</p>
-                  {{/if}}
-                </div>
+                {{{questionAnswerForDisplay question_text answer_json ${display.includeQuestionText} ${display.includeUnansweredQuestions}}}}
               {{/each}}
               </p>
             {{/if}}
@@ -465,29 +460,14 @@ export function renderHTML(
       {{/if}}
       <hr class="bottom" />
 
-      {{#if ${display.includeResearchOutputs}}}
-        {{#if dataset}}
-          <div style="page-break-before:always;"></div>
-          <h2>Planned Research Outputs</h2>
-
-          {{#each dataset}}
-            <h3>{{title}}</h3>
-            <p>{{{description}}}</p>
-          {{/each}}
-
-          {{{researchOutputsAsTable dataset}}}
-
-          <hr class="bottom" />
-        {{/if}}
-      {{/if}}
-
       {{#if ${display.includeRelatedWorks}}}
         {{#if dmproadmap_related_identifiers}}
+          <div class="page-break" style="page-break-before: always;"></div>
+
           <div style="page-break-before:always;"></div>
+          <h1>{{title}}</h1>
           <h2>Related Works</h2>
-
           {{{relatedWorksByType dmproadmap_related_identifiers}}}
-
           <hr class="bottom" />
         {{/if}}
       {{/if}}
