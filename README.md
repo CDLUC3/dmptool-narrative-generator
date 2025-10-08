@@ -11,6 +11,17 @@ A narrative for any `public` DMP can be generated without an authentication cook
 
 The service can also respond to health checks on `/narrative-health`
 
+## Table of Contents
+- [Supported Formats](#supported-formats)
+- [Query parameters](#query-parameters)
+- [Usage](#usage)
+- [Development](#development)
+- [Testing](#testing)
+- [License](LICENSE)
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Changelog](CHANGELOG.md)
+
 ## Supported Formats
 
 The service supports the following output formats:
