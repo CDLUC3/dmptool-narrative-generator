@@ -61,21 +61,21 @@ Note that you must have the application running using `npm run dev` for the foll
 
 Example with query parameters to adjust formatting:
 ```shell
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?fontSize=13&marginLeft=5&includeCoverPage=false" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative?fontSize=13&marginLeft=5&includeCoverPage=false" \
 -H "Accept: text/html" 
 --output tmp/test.html
 ```
 
 Example of fetching a historical version of a DMP:
 ```shell
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/html"  
 --output tmp/test.html
 ```
 
 Example with Auth token as cookie:
 ```shell
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative" \
 -H "Accept: text/html" 
 -b "dmspt=my-cookie"  
 --output tmp/test.html
@@ -84,32 +84,32 @@ curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative" \
 Examples for each format type:
 ```shell
 # CSV
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/csv" \
 --output tmp/dmp.csv
 
 # DOCX
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: application/vnd.openxmlformats-officedocument.wordprocessingml.document" \
 --output tmp/dmp.docx
 
 # HTML
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/html" 
 --output tmp/dmp.html  
 
 # JSON
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/html" 
 --output tmp/dmp.json
 
 # PDF
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: application/pdf" \
 --output tmp/dmp.pdf
 
 # TEXT
-curl -v "http://localhost:3030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
+curl -v "http://localhost:4030/dmps/00.00000/A1B2C3/narrative?version=2024-01-23T16:24:56Z" \
 -H "Accept: text/plain" \
 --output tmp/dmp.txt
 ```

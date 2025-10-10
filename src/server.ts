@@ -328,7 +328,7 @@ app.get("/narrative-health", (_: Request, res: Response) => res.send("ok"));
 // ----------------- Startup the server  -----------------
 const startServer = async () => {
   await sqlDataSource.initPromise;
-  const PORT = process.env.PORT || 3030;
+  const PORT = process.env.PORT || 4030;
   app.listen(PORT, () => console.log(`${process.env.APP_NAME} listening on port ${PORT}`));
 }
 
