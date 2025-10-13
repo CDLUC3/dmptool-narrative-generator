@@ -388,7 +388,7 @@ export function renderHTML(
     <body>
       {{#if ${display.includeCoverPage}}}
 
-        <h1>Plan Overview</h1>
+        <h1>{{title}}</h1>
         <hr>
         <div class="cover-page">
           <p class="header">
@@ -400,9 +400,6 @@ export function renderHTML(
               <a href="{{dmp_id.identifier}}" target="_blank">{{doiForDisplay dmp_id.identifier}}</a>
             </p>
           {{/if}}
-          <p>
-            <b>Title: </b>{{title}}
-          </p>
           <p>
             <strong>Creator:</strong> {{contact.name}} {{{contactIdentifierForDisplay contact.contact_id}}}
           </p>
