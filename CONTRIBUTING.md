@@ -4,6 +4,17 @@ Thank you for your interest in contributing! 🎉
 We welcome all contributions — from bug fixes and documentation improvements to major feature implementations.  
 Please take a few minutes to review this guide before submitting your contribution.
 
+## How to Report Issues
+- Use [GitHub Issues](https://github.com/CDLUC3/dmptool-narrative-generator/issues) for bugs and feature requests.
+- Include as much detail as possible.
+
+## Code of Conduct
+Please review and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE.md).
+
+
 ---
 
 ## 🧭 How to Contribute
@@ -30,6 +41,8 @@ Please use the following naming convention:
 
 ### 3. Make Your Changes
 Make your changes in your local repository. Please ensure that your code adheres to the project's coding standards and conventions.
+
+For information on how to set up your development environment, please refer to the [README.md](README.md).
 
 We use eslint for JavaScript/TypeScript linting. You can run the linter with:
 ```bash
