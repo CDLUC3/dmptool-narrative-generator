@@ -42,7 +42,7 @@
     "mysql2": "3.14.4",
     "pino": "9.9.0",
     "pluralize": "8.0.0",
-    "puppeteer": "24.17.0"
+    "puppeteer": "24.25.0"
   },
   "devDependencies": {
     "@eslint/js": "9.34.0",
