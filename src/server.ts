@@ -9,7 +9,12 @@ import { renderPDF } from "./pdf";
 import { renderDOCX } from "./docx";
 import { renderTXT } from "./txt";
 import { initLogger, logger, prepareObjectForLogs } from "./logger";
-import { safeNumber, safeBoolean, pointsToFontSize } from "./helper";
+import {
+  safeNumber,
+  safeBoolean,
+  pointsToFontSize,
+  getFontFamily
+} from "./helper";
 import { expressjwt, Request } from "express-jwt";
 import { getDMP } from "./dynamo";
 import { MySQLConnection } from "./mysql";
@@ -92,7 +97,7 @@ function prepareOptions(params: any): OptionsInterface {
       marginLeft: safeNumber(params?.marginLeft as string, 96),
     },
     font: {
-      fontFamily: "Tinos, serif",
+      fontFamily: getFontFamily(params?.fontFamily as string),
       fontSize: pointsToFontSize(safeNumber(params?.fontSize as string, 11)),
       lineHeight: safeNumber(params?.lineHeight as string, 120),
     }

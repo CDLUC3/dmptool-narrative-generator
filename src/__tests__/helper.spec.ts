@@ -1,4 +1,10 @@
-import { safeNumber, safeBoolean, pointsToFontSize, formatDate } from "../helper";
+import { 
+  safeNumber, 
+  safeBoolean, 
+  pointsToFontSize, 
+  formatDate,
+  getFontFamily
+ } from "../helper";
 
 describe("safeNumber", () => {
   it("parses valid numbers", () => {
@@ -77,5 +83,18 @@ describe("formatDate", () => {
   it("returns 'None specified' for invalid date", () => {
     const result = formatDate("not-a-date");
     expect(result).toBe("None specified");
+  });
+});
+
+describe("getFontFamily", () => {
+  it("returns a default font family for unknown values", () => {
+    expect(getFontFamily("unknown")).toBe("Tinos, serif");
+    expect(getFontFamily("")).toBe("Tinos, serif");
+    expect(getFontFamily("  ")).toBe("Tinos, serif");
+  });
+
+  it("returns the correct font family for known values", () => {
+    expect(getFontFamily("tinos")).toBe("Tinos, serif");
+    expect(getFontFamily("roboto")).toBe("Roboto, sans-serif");
   });
 });
