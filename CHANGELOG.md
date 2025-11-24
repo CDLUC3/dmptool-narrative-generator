@@ -1,7 +1,8 @@
 
 # Added
 - Added a Dependabot config file
-
+- Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
+- 
 # Updated
 - Updated `dotenv`, `mysql2`, `@eslint/js`, `fast-check` and `puppeteer` dependencies
 - Updated the `glob` and `js-yaml` dependencies
