@@ -136,22 +136,11 @@ app.use(cookieParser());
 //   /dmps/11.11111/A1B2C3/narrative
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
 app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Response) => {
-
-console.log('FOO')
-console.log(process.env.LOG_LEVEL)
-
-
   // Process the environment variables
   const logLevel: LogLevelEnum = LogLevelEnum[process.env.LOG_LEVEL?.toUpperCase()] || LogLevelEnum.INFO;
-console.log(logLevel)
   const env: EnvironmentEnum = EnvironmentEnum[process.env.ENV?.toUpperCase()] || EnvironmentEnum.DEV;
-console.log(env)
   const domainName = process.env.DOMAIN_NAME ?? "localhost:3000";
-console.log(domainName)
   const applicationName = process.env.APPLICATION_NAME ?? "dmptool";
-console.log(applicationName)
-
-console.log('BAR')
 
   // Get the format the user wants the narrative document in from either
   // the specified file extension OR the Accept header
@@ -196,13 +185,8 @@ console.log('BAR')
     'Received request for DMP narrative'
   );
 
-console.log('HERE')
-
   try {
     const plan: PlanInterface = await loadPlan(requestLogger, fullDMPId, env);
-
-console.log(plan);
-
     if (!plan) {
       requestLogger.warn({ dmpId, jti: token?.jti }, "No Plan found");
       // We return 404 here so that we're not signaling which DMP ids are valid
