@@ -25,20 +25,24 @@ services:
       - "AWS_ACCESS_KEY_ID=DUMMYIDEXAMPLE"
       - "AWS_SECRET_ACCESS_KEY=DUMMYEXAMPLEKEY"
       - "REGION=us-west-2"
+      - "ENV=dev"
       - "NODE_ENV=development"
 
-      - "MYSQL_CONNECTION_LIMIT=5"
-      - "MYSQL_HOST=apollo-mysql"
-      - "MYSQL_PORT=3306"
-      - "MYSQL_DATABASE=dmsp"
-      - "MYSQL_USER=root"
-      - "MYSQL_PASSWORD=d0ckerSecr3t"
+      - "RDS_HOST=apollo-mysql"
+      - "RDS_PORT=3306"
+      - "RDS_DATABASE=dmptool"
 
-      - "DYNAMO_TABLE_NAME=localDMPTable"
-      - "DYNAMO_ENDPOINT=http://dynamodb:8000"
+      - "DYNAMODB_ENDPOINT=http://localstack:4566"
+      - "DYNAMODB_TABLE_NAME=localDMPTable"
+      - "MAX_ATTEMPTS=3"
 
       - "CACHE_HOST=apollo-redis"
       - "CACHE_PORT=6379"
       - "CACHE_CONNECT_TIMEOUT=10000"
+
+      - "EZID_BASE_URL=https://doi.org"
+
+      # Using the Apollo server network's LocalStack endpoint
+      - "SSM_ENDPOINT=http://localstack:4566"
     volumes:
       - ".:/app"
