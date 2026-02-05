@@ -44,5 +44,6 @@ services:
 
       # Using the Apollo server network's LocalStack endpoint
       - "SSM_ENDPOINT=http://localstack:4566"
+
     volumes:
       - ".:/app"
