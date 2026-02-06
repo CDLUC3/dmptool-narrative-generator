@@ -1,11 +1,10 @@
 import HtmlToDocx from "@turbodocx/html-to-docx";
 import { FontInterface, MarginInterface } from "./server";
 import { Logger } from "pino";
-import { prepareObjectForLogs } from "./logger";
 
 // Convert millimeters to TWIPs (Twentieth of a Point)
 function mmToTwip (mm: number): number {
-  if (mm || mm <= 0) return 0;
+  if (mm && mm <= 0) return 0;
 
   // Convert mm to TWIP
   return Math.round((mm / 25.4) * 1440);
@@ -13,7 +12,7 @@ function mmToTwip (mm: number): number {
 
 // Convert pixels to HIP (Half of a Point)
 function pxToHip (px: number): number {
-  if (px || px <= 0) return 0;
+  if (px && px <= 0) return 0;
 
   // Convert pixels to points
   const pts = (px / 96) * 72;
@@ -66,7 +65,7 @@ export async function renderDOCX(
     }
   } catch (err) {
     const msg = "Unable to render DOCX."
-    requestLogger.error(prepareObjectForLogs({ title, margin, font, err, html }), msg);
+    requestLogger.error({ title, margin, font, err, html }, msg);
     throw new Error(msg);
   }
 }
