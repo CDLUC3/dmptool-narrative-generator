@@ -222,6 +222,7 @@ export async function loadMaDMPFromDynamo(
 ): Promise<DMPToolDMPType | undefined> {
   const dynamoConfig: DynamoConnectionParams = getDynamoConfig(logger);
 
+  logger.debug(`Fetching maDMP record for ${dmpId} from DynamoDB`);
   // Fetch the Plan's latest maDMP JSON from the DynamoDB Table
   const data: DMPToolDMPType[] = await getDMPs(
     dynamoConfig,
@@ -230,6 +231,8 @@ export async function loadMaDMPFromDynamo(
     DMP_LATEST_VERSION,
     true
   );
+  const hasNarrative = Array.isArray(data) && data[0]?.dmp?.narrative !== undefined;
+  logger.debug(`Fetched maDMP record for ${dmpId}. Has narrative? ${hasNarrative}`);
   return Array.isArray(data) && data.length > 0 ? data[0] : undefined;
 }
 

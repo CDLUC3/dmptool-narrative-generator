@@ -145,8 +145,9 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   // Get the format the user wants the narrative document in from either
   // the specified file extension OR the Accept header
   let accept: string;
+
   if (req.params.ext && req.params.ext.length > 0) {
-    switch (req.params.ext.toLowerCase()) {
+    switch (req.params.ext[0].toLowerCase()) {
       case "csv": accept = CSV_TYPE; break;
       case "docx": accept = DOCX_TYPE; break;
       case "json": accept = JSON_TYPE; break;
@@ -166,7 +167,7 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   const dmpId = req.params.splat.toString().replace(",", "/");
   const fullDMPId = `${process.env.EZID_BASE_URL}/${dmpId}`;
 
-  // Initialze the logger
+  // Initialize the logger
   const requestLogger: Logger = initializeLogger('narrative-generator', logLevel);
 
   requestLogger.debug(
