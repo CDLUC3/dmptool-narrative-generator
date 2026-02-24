@@ -22,7 +22,7 @@
     "trivy-med": "./src/scripts/trivy-med.sh"
   },
   "dependencies": {
-    "@dmptool/types": "3.1.0",
+    "@dmptool/types": "3.1.2",
     "@dmptool/utils": "1.0.40",
     "@elastic/ecs-pino-format": "1.5.0",
     "@turbodocx/html-to-docx": "1.19.0",
