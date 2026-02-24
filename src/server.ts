@@ -102,7 +102,7 @@ function prepareOptions(params: any): OptionsInterface {
 const auth = expressjwt({
   algorithms: ['HS256'],
   credentialsRequired: false,
-  secret: process.env.JWT_SECRET || "secret",
+  secret: process.env.JWT_SECRET,
 
   // Fetch the access token from the cookie
   getToken: function fromCookie(req) {
@@ -126,6 +126,22 @@ function processAccept(accept: string): string[] {
   return rawTypes.split(",");
 }
 
+// ----------------- Verify required env variables ----------
+const requiredEnvVars = [
+  "APPLICATION_NAME",
+  "DYNAMODB_TABLE_NAME",
+  "DYNAMODB_ENDPOINT",
+  "EZID_BASE_URL",
+  "JWT_SECRET",
+  "RDS_HOST",
+  "SSM_ENDPOINT"
+];
+requiredEnvVars.forEach(envVar => {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+})
+
 // ----------------- Initialize the server  -----------------
 const app = express();
 app.use(express.json({ limit: "5mb" }));
@@ -137,10 +153,10 @@ app.use(cookieParser());
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
 app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Response) => {
   // Process the environment variables
-  const logLevel: LogLevelEnum = LogLevelEnum[process.env.LOG_LEVEL?.toUpperCase()] || LogLevelEnum.INFO;
-  const env: EnvironmentEnum = EnvironmentEnum[process.env.ENV?.toUpperCase()] || EnvironmentEnum.DEV;
-  const domainName = process.env.DOMAIN_NAME ?? "localhost:3000";
-  const applicationName = process.env.APPLICATION_NAME ?? "dmptool";
+  const logLevel: LogLevelEnum = process.env.LOG_LEVEL ? LogLevelEnum[process.env.LOG_LEVEL.toUpperCase()] : LogLevelEnum.INFO;
+  const env: EnvironmentEnum = process.env.ENV ? EnvironmentEnum[process.env.ENV?.toUpperCase()] : EnvironmentEnum.DEV;
+  const domainName = process.env.DOMAIN_NAME || "localhost:3000";
+  const applicationName = process.env.APPLICATION_NAME;
 
   // Get the format the user wants the narrative document in from either
   // the specified file extension OR the Accept header
@@ -163,6 +179,13 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   const { version, display, margin, font } = prepareOptions(req.query);
   // Get the JWT if there is one
   const token = req.auth as JWTAccessToken
+
+  // Verify that a DMP Id was specified in the path
+  if (!req.params || !req.params.splat) {
+    res.status(400).send("Invalid request");
+    return;
+  }
+
   // Get the DMP id from the path
   const dmpId = req.params.splat.toString().replace(",", "/");
   const fullDMPId = `${process.env.EZID_BASE_URL}/${dmpId}`;
@@ -329,7 +352,7 @@ app.get("/narrative-health", (_: Request, res: Response) => res.send("ok"));
 // ----------------- Startup the server  -----------------
 const startServer = async () => {
   const PORT = process.env.PORT || 4030;
-  app.listen(PORT, () => console.log(`${process.env.APP_NAME} listening on port ${PORT}`));
+  app.listen(PORT, () => console.log(`${process.env.APPLICATION_NAME} listening on port ${PORT}`));
 }
 
 // Graceful shutdown

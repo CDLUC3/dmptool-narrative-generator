@@ -46,7 +46,7 @@ const getSSMConfig = async (
   // If running locally, the SSM_ENDPOINT variable will be set
   return {
     logger,
-    region: process.env.AWS_REGION,
+    region: process.env.AWS_REGION || 'us-west-2',
     endpoint: process.env.SSM_ENDPOINT,
     useTLS: process.env.SSM_ENDPOINT === undefined
   };
@@ -61,11 +61,6 @@ const getSSMConfig = async (
 const getDynamoConfig = (
   logger: Logger
 ): DynamoConnectionParams | undefined => {
-  if (!process.env.DYNAMODB_TABLE_NAME) {
-    logger.fatal('Missing DYNAMODB_TABLE_NAME env variable!');
-    return undefined;
-  }
-
   return {
     logger,
     region: process.env.AWS_REGION || 'us-west-2',
@@ -89,10 +84,6 @@ const getRDSConfig = async (
   const rdsUser = await getSSMParameter(ssmConfig, 'RdsUsername', env);
   const rdsPassword = await getSSMParameter(ssmConfig, 'RdsPassword', env);
 
-  if (!process.env.RDS_HOST) {
-    ssmConfig.logger.fatal('Missing RDS_HOST env variable!');
-    return undefined;
-  }
   if (!rdsUser) {
     ssmConfig.logger.fatal('Missing RdsUserName in SSM Parameter Store!');
     return undefined;
@@ -106,7 +97,7 @@ const getRDSConfig = async (
     logger: ssmConfig.logger,
     host: process.env.RDS_HOST,
     port: Number(process.env.RDS_PORT) || 3306,
-    user: rdsUser || 'root',
+    user: rdsUser,
     password: rdsPassword,
     database: process.env.RDS_DATABASE || 'dmp'
   };

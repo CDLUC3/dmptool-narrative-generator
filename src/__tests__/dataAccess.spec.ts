@@ -422,16 +422,6 @@ describe("dataAccess", () => {
 
       expect(result).toBeUndefined();
     });
-
-    it("should log fatal error when DYNAMODB_TABLE_NAME is missing", async () => {
-      delete process.env.DYNAMODB_TABLE_NAME;
-
-      (getDMPs as jest.Mock).mockResolvedValue([]);
-
-      await loadMaDMPFromDynamo(mockLogger, domainName, dmpId);
-
-      expect(mockLogger.fatal).toHaveBeenCalledWith("Missing DYNAMODB_TABLE_NAME env variable!");
-    });
   });
 
   describe("handleMissingMaDMP", () => {
