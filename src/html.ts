@@ -12,21 +12,27 @@ import {
   AnyAnswerType,
   DateAnswerType,
   DateRangeAnswerType,
+  DMPToolDMPType,
   NumberRangeAnswerType,
   TableAnswerType,
   TextAreaAnswerType
 } from "@dmptool/types";
 
-// ---------------- Format an Answer as HTML ----------------
+/**
+ * Convert an answer to HTML based on its type.
+ *
+ * @param json The answer JSON to convert to HTML.
+ * @returns The HTML representation of the answer.
+ */
 function answerToHTML (json: AnyAnswerType): string {
   let out = "<p>Not yet answered.</p>";
 
-  // If the answer isn't a known type skip it
+  // If the answer isn't a known type, skip it
   if (!Object.keys(AnswerSchemaMap).includes(json['type'])) {
     return "<p>Unable to render this answer (unknown type).</p>";
   }
 
-  // Validate the json against the Zod schema and if invalid skip it
+  // Validate the JSON against the Zod schema and if invalid skip it
   const result = AnswerSchemaMap[json['type']]?.safeParse(json);
   if (result && !result.success) {
     return "<p>Unable to render this answer (invalid answer).</p>";
@@ -66,7 +72,7 @@ function answerToHTML (json: AnyAnswerType): string {
         let table = "<table>";
 
         if (cols) {
-          // Add all of the column headings
+          // Add all the column headings
           const ths = cols.map((th) => `<th>${th}</th>`).join("");
           table += `<tr>${ths}</tr>`;
         }
@@ -131,7 +137,13 @@ function answerToHTML (json: AnyAnswerType): string {
   return out;
 }
 
-// ---------------- Related works for a specific type ----------------
+/**
+ * Transform a work type for display in the narrative.
+ *
+ * @param workType The work type to transform.
+ * @param pluralizeIt Whether to pluralize the type name.
+ * @returns The transformed work type.
+ */
 function workTypeForDisplay(workType: string, pluralizeIt = true): string {
   // Capitalize the type name and replace underscores with spaces
   let typeLabel = workType.replace(/_/g, " ");
@@ -139,81 +151,101 @@ function workTypeForDisplay(workType: string, pluralizeIt = true): string {
   return `${typeLabel[0].toUpperCase()}${typeLabel.slice(1)}`;
 }
 
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function relatedWorksForType(workType: string, works: any[]): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const out: string[] = works.filter((work: any) => work.work_type.includes(workType))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((work: any) => {
+/**
+ * Helper to gather all the related works for a given work type.
+ *
+ * @param workType The work type to gather works for.
+ * @param works The list of related works to search.
+ * @returns A list of HTML formatted related works.
+ */
+function relatedWorksForType(
+  workType: string,
+  works: DMPToolDMPType["dmp"]["related_identifier"]
+): string {
+  const out: string[] = works.filter((work: { type: string, identifier: string }) => work.type.includes(workType))
+    .map((work) => {
       return work?.citation ? work.citation : `<a href="${work.identifier}" target="_blank">${work.identifier}</a>`;
     });
 
   return out.length === 0 ? null : out.map((work) => `<li>${work}</li>`).join("");
 }
 
-// ---------------- Format ISO dates ----------------
+/**
+ * Format a date for display.
+ */
 Handlebars.registerHelper("formatDate", formatDate);
 
-// ---------------- Remove protocol and domains from URLs ----------------
+/**
+ * Format a DOI for display.
+ */
 Handlebars.registerHelper("doiForDisplay", function (doi: string): string {
   return doi.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, "");
 });
 
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("contactIdentifierForDisplay", function (contactId: any): string {
-  if (contactId?.type === "orcid" && contactId?.identifier) {
-    const idForDisplay = contactId?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
-    return `- <strong>ORCID:</strong> <a href="${contactId?.identifier}" target="_blank">${idForDisplay}</a>`
-  }
-});
-
-// ---------------- Group contributors by role ----------------
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("contributorsForRole", function(role: string, contributors: any[]): any {
-  if (!Array.isArray(contributors) || contributors.length < 1) return [];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const out: string[] = contributors.filter((contributor: any) => contributor.role.includes(role))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((contributor: any) => {
-        return contributor?.contributor_id?.identifier ? `<a href="${contributor.contributor_id.identifier}" target="_blank">${contributor.name}</a>` : contributor.name;
-    });
-
-  return out.length === 0 ? "None specified" : out.join("; ");
-});
-
-// ---------------- Group related works by type ----------------
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("relatedWorksByType", function(works: any[]): string {
-  if (!Array.isArray(works) || works.length < 1) return "";
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const workTypes: string[] = works.map((work: any) => work.work_type).flat();
-
-  const out: string[] = [];
-  // Loop through each unique work type and collect all the citations
-  for(const workType of [...new Set(workTypes)]) {
-    const worksForType = relatedWorksForType(workType, works);
-
-    if (worksForType) {
-      out.push(`<li><strong>${workTypeForDisplay(workType)}</strong><ul>${worksForType}</ul></li>`);
+/**
+ * Format the contact person's identifier for display (ignore email).
+ */
+Handlebars.registerHelper(
+  "contactIdentifierForDisplay",
+  function (contactId: DMPToolDMPType["dmp"]["contact"]["contact_id"]): string {
+    if (contactId?.type === "orcid" && contactId?.identifier) {
+      const idForDisplay = contactId?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
+      return `- <strong>ORCID:</strong> <a href="${contactId?.identifier}" target="_blank">${idForDisplay}</a>`
     }
+ }
+);
+
+/**
+ * Format a list of contributors for display based on their role.
+ */
+Handlebars.registerHelper(
+  "contributorsForRole",
+  function(role: string, contributors: DMPToolDMPType["dmp"]["contributor"]): string {
+    if (!Array.isArray(contributors) || contributors.length < 1) return undefined;
+    const out: string[] = contributors.filter((contributor) => contributor.role.includes(role))
+      .map((contributor) => {
+          return contributor?.contributor_id?.identifier ? `<a href="${contributor.contributor_id.identifier}" target="_blank">${contributor.name}</a>` : contributor.name;
+      });
+    return out.length === 0 ? "None specified" : out.join("; ");
   }
-  return out.length === 0 ? "None specified" : `<ul>${out.join("")}</ul>`;
-});
+);
 
-// ---------------- Affiliation helper ----------------
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("affiliationForDisplay", function(affiliation: any): string {
-  return affiliation?.affiliation_id?.identifier ? `<a href="${affiliation.affiliation_id.identifier}" target="_blank">${affiliation.name}</a>` : affiliation?.name;
-});
+/**
+ * Format a list of related works for display.
+ */
+Handlebars.registerHelper(
+  "relatedWorksByType",
+  function(works: DMPToolDMPType["dmp"]["related_identifier"]): string {
+    if (!Array.isArray(works) || works.length < 1) return "";
 
-// ---------------- Copyright info based on the DMP visibility ----------------
+    const workTypes: string[] = works.map((work) => work.type).flat();
+
+    const out: string[] = [];
+    // Loop through each unique work type and collect all the citations
+    for(const workType of [...new Set(workTypes)]) {
+      const worksForType = relatedWorksForType(workType, works);
+
+      if (worksForType) {
+        out.push(`<li><strong>${workTypeForDisplay(workType)}</strong><ul>${worksForType}</ul></li>`);
+      }
+    }
+    return out.length === 0 ? "None specified" : `<ul>${out.join("")}</ul>`;
+  }
+);
+
+/**
+ * Format a an affiliation for display.
+ */
+Handlebars.registerHelper(
+  "affiliationForDisplay",
+  function(affiliation: DMPToolDMPType["dmp"]["contact"]["affiliation"]): string {
+    return affiliation[0]?.affiliation_id?.identifier ? `<a href="${affiliation[0].affiliation_id.identifier}" target="_blank">${affiliation[0].name}</a>` : affiliation[0]?.name;
+  }
+);
+
+/**
+ * Generate the copyright notice for display based on the privacy setting.
+ */
 Handlebars.registerHelper("copyrightForDisplay", function(visibility: string): string {
   if (visibility?.toLowerCase()?.trim() === "public") {
     return `
@@ -234,92 +266,126 @@ Handlebars.registerHelper("copyrightForDisplay", function(visibility: string): s
   }
 });
 
-// ---------------- Funder and Project helpers ----------------
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("fundersForDisplay", function(project: any): string {
-  let funding = project.map((project) => project.funding).flat();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  funding = funding.filter((fund: any) => fund !== null && fund !== undefined);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return funding.map((fund: any) => {
-    return fund?.funder_id?.identifier ? `<a href="${fund.funder_id.identifier}" target="_blank">${fund.name}</a>` : fund.name;
-  }).join("; ");
-});
+/**
+ * Format a list of funding sources for display.
+ */
+Handlebars.registerHelper(
+  "fundersForDisplay",
+  function(project: DMPToolDMPType["dmp"]["project"][]): string {
+    let funding = project.map((project) => project.funding).flat();
+    funding = funding.filter((fund) => fund !== null && fund !== undefined);
+    return funding.map((fund) => {
+      return fund?.funder_id?.identifier ? `<a href="${fund.funder_id.identifier}" target="_blank">${fund.name}</a>` : fund.name;
+    }).join("; ");
+  }
+);
 
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("displayProjectStartDate", function(project: any): string {
-  const dates: string[] = project.map((project) => formatDate(project.start, false)).flat();
-  return dates.length === 0 ? "None specified" : dates.sort()[0];
-});
+/**
+ * Format the project abstract
+ */
+Handlebars.registerHelper(
+  "displayProjectAbstract",
+  function(project: DMPToolDMPType["dmp"]["project"][]): string {
+    return project[0]?.description;
+  }
+);
 
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-Handlebars.registerHelper("displayProjectEndDate", function (project: any): string {
-  const dates: string[] = project.map((project) => formatDate(project.end, false)).flat();
-  return dates.length === 0 ? "None specified" : dates.sort()[dates.length - 1];
-});
+/**
+ * Format the project start date for display.
+ */
+Handlebars.registerHelper(
+  "displayProjectStartDate",
+  function(project: DMPToolDMPType["dmp"]["project"][]): string {
+    const dates: string[] = project.map((project) => formatDate(project.start, false)).flat();
+    return dates.length === 0 ? "None specified" : dates.sort()[0];
+  }
+);
 
-// ---------------- Answer helpers ----------------
+/**
+ * Format the project end date for display.
+ */
+Handlebars.registerHelper(
+  "displayProjectEndDate",
+  function (project: DMPToolDMPType["dmp"]["project"][]): string {
+    const dates: string[] = project.map((project) => formatDate(project.end, false)).flat();
+    return dates.length === 0 ? "None specified" : dates.sort()[dates.length - 1];
+  }
+);
+
+/**
+ * Format the answer to a question
+ */
 Handlebars.registerHelper("formatAnswer", function (json: AnyAnswerType): string {
   return answerToHTML(json);
 });
 
-Handlebars.registerHelper("questionAnswerForDisplay", function (question: string, answer: AnyAnswerType, includeQs: boolean, includeUnanswered: boolean): string {
-  let answered = false;
+/**
+ * Format a question and answer for display.
+ */
+Handlebars.registerHelper(
+  "questionAnswerForDisplay",
+  function (question: string, answer: { id: number, json: AnyAnswerType }, includeQs: boolean, includeUnanswered: boolean): string {
+    let answered = false;
 
-  // Determine if the answer is empty based on the type
-  if (answer?.type !== undefined && answer?.type !== null) {
-    switch (answer.type) {
-      case "boolean":
-        answered = true
-        break;
+    // Determine if the answer is empty based on the type
+    if (answer?.json?.type !== undefined && answer?.json?.type !== null) {
+      switch (answer?.json.type) {
+        case "boolean":
+          answered = true
+          break;
 
-      case "currency":
-      case "number":
-        answered = answer.answer !== undefined;
-        break;
+        case "currency":
+        case "number":
+          answered = answer?.json.answer !== undefined;
+          break;
 
-      case "dateRange":
-      case "numberRange":
-        answered = answer.answer.start !== undefined || answer.answer.end !== undefined;
-        break;
+        case "dateRange":
+        case "numberRange":
+          answered = answer?.json.answer.start !== undefined || answer?.json.answer.end !== undefined;
+          break;
 
-      case "checkBoxes":
-      case "multiselectBox":
-        answered = Array.isArray(answer.answer) && answer.answer.length > 0;
-        break;
+        case "checkBoxes":
+        case "multiselectBox":
+          answered = Array.isArray(answer?.json.answer) && answer?.json.answer.length > 0;
+          break;
 
-      case "affiliationSearch":
-        answered = answer.answer?.affiliationId !== undefined || answer.answer?.affiliationName !== undefined;
-        break;
+        case "affiliationSearch":
+          answered = answer?.json.answer?.affiliationId !== undefined || answer?.json.answer?.affiliationName !== undefined;
+          break;
 
-      default:
-        answered = answer?.answer?.toString()?.trim()?.length > 0;
-        break;
+        default:
+          answered = answer?.json?.answer?.toString()?.trim()?.length > 0;
+          break;
+      }
     }
+
+    // If the question was not answered, and we are not supposed to return unanswered questions
+    if (!answered && !includeUnanswered) return "";
+
+    const qText = includeQs ? `<strong>${question}</strong>` : "";
+    const aText = answered
+      ? answerToHTML(answer?.json)
+      : (includeUnanswered ? "<p>Not answered</p>" : "");
+
+    return `<div class="question">${qText}${aText}</div>`;
   }
+);
 
-  // If the question was not answered and we are not supposed to return unanswered questions
-  if (!answered && !includeUnanswered) return "";
-
-  const qText = includeQs ? `<strong>${question}</strong>` : "";
-  const aText = answered
-    ? answerToHTML(answer)
-    : (includeUnanswered ? "<p>Not answered</p>" : "");
-
-  return `<div class="question">${qText}${aText}</div>`;
-});
-
-// ---------------- Render the full HTML doc ----------------
+/**
+ * Render the maDMP record as HTML
+ *
+ * @param display The options for displaying parts of the narrative
+ * (e.g. show unanswered questions)
+ * @param margin The margins to use when rendering the HTML
+ * @param font The font to use when rendering the HTML
+ * @param data The maDMP record to render
+ * @returns The rendered HTML
+ */
 export function renderHTML(
   display: DisplayOptionsInterface,
   margin: MarginInterface,
   font: FontInterface,
-  // TODO: Update the type here once the common standard is in @dmptool/types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any
+  data: DMPToolDMPType["dmp"]
 ): string {
   const template = Handlebars.compile(`
   <html>
@@ -404,21 +470,21 @@ export function renderHTML(
             <strong>Creator:</strong> {{contact.name}} {{{contactIdentifierForDisplay contact.contact_id}}}
           </p>
           <p>
-            <strong>Affiliation:</strong> {{{affiliationForDisplay contact.dmproadmap_affiliation}}}
+            <strong>Affiliation:</strong> {{{affiliationForDisplay contact.affiliation}}}
           </p>
           <p>
-            <b>Principal Investigator(s): </b>{{{contributorsForRole "http://credit.niso.org/contributor-roles/investigation" contributor}}}
+            <b>Principal Investigator(s): </b>{{{contributorsForRole "https://credit.niso.org/contributor-roles/investigation" contributor}}}
           </p>
           <p>
             <b>Funder: </b>{{{fundersForDisplay project}}}
           </p>
           <p>
-            <b>DMP Tool Template: </b>{{dmproadmap_narrative.template_title}} - {{dmproadmap_narrative.template_version}}
+            <b>DMP Tool Template: </b>{{narrative.template.title}} - {{narrative.template.version}}
           </p>
           <p>
             <b>Project abstract: </b>
             <div style="margin-left: 15px;">
-              <p>{{{description}}}</p>
+              <p>{{{displayProjectAbstract project}}}</p>
             </div>
           </p>
           <p>
@@ -428,7 +494,7 @@ export function renderHTML(
             <b>End date: </b>{{displayProjectEndDate project}}
           </p>
           <p>
-            <strong>Copyright information:</strong> {{{copyrightForDisplay dmproadmap_privacy}}}
+            <strong>Copyright information:</strong> {{{copyrightForDisplay privacy}}}
           </p>
         </div>
         <hr class="bottom" />
@@ -439,32 +505,36 @@ export function renderHTML(
 
       <h1>{{title}}</h1>
 
-      {{#if dmproadmap_narrative.sections}}
-        {{#each dmproadmap_narrative.sections}}
-          <div class="section">
-            {{#if ${display.includeSectionHeadings}}}
-              <h2>{{section_title}}</h2>
-              <hr>
-            {{/if}}
-            {{#if questions}}
-              {{#each questions}}
-                {{{questionAnswerForDisplay question_text answer_json ${display.includeQuestionText} ${display.includeUnansweredQuestions}}}}
-              {{/each}}
-              </p>
-            {{/if}}
-          </div>
-        {{/each}}
+      {{#if narrative}}
+        {{#if narrative.template}}
+          {{#if narrative.template.section}}
+            {{#each narrative.template.section}}
+              <div class="section">
+                {{#if ${display.includeSectionHeadings}}}
+                  <h2>{{title}}</h2>
+                  <hr>
+                {{/if}}
+                {{#if question}}
+                  {{#each question}}
+                    {{{questionAnswerForDisplay text answer ${display.includeQuestionText} ${display.includeUnansweredQuestions}}}}
+                  {{/each}}
+                  </p>
+                {{/if}}
+              </div>
+            {{/each}}
+          {{/if}}
+        {{/if}}
       {{/if}}
       <hr class="bottom" />
 
       {{#if ${display.includeRelatedWorks}}}
-        {{#if dmproadmap_related_identifiers}}
+        {{#if related_identifier}}
           <div class="page-break" style="page-break-before: always;"></div>
 
           <div style="page-break-before:always;"></div>
           <h1>{{title}}</h1>
           <h2>Related Works</h2>
-          {{{relatedWorksByType dmproadmap_related_identifiers}}}
+          {{{relatedWorksByType related_identifier}}}
           <hr class="bottom" />
         {{/if}}
       {{/if}}

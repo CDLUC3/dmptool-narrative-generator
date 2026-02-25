@@ -1,5 +1,6 @@
 import { renderCSV } from "../csv";
 import {AnyAnswerType, TableAnswerType} from "@dmptool/types";
+import {DMPExtensionNarrative} from "@dmptool/utils";
 
 const defaultDisplayOptions = {
   includeCoverPage: true,
@@ -17,98 +18,108 @@ describe("renderCsv + answerToCSV integration", () => {
     includeQuestionText: false
   };
 
-  const wrap = (answer_json: AnyAnswerType) => ({
-    dmproadmap_narrative: {
-      sections: [
-        {
-          section_title: "Section 1",
-          questions: [{ question_text: "Q1", answer_json }]
-        }
-      ]
-    }
+  const wrap = (answer_json: AnyAnswerType): DMPExtensionNarrative => ({
+    id: 1,
+    title: "Template",
+    section: [
+      {
+        id: 123,
+        title: "Section 1",
+        order: 1,
+        question: [{
+          id: 123,
+          text: "Q1",
+          order: 1,
+          answer: {
+            id: 123,
+            json: answer_json
+          }
+        }]
+      }
+    ]
   });
 
   it("handles textArea (strips HTML)", () => {
-    const data = wrap({
+    const data: DMPExtensionNarrative = wrap({
       type: "textArea",
       answer: "<p>Hello <b>World</b></p>",
       meta: {
         schemaVersion: "1.0.0",
       }
     });
-    const csv = renderCSV(baseDisplay, data);
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     expect(csv).toContain("Hello World");
   });
 
   it("handles dateRange (uses formatDate)", () => {
-    const data = wrap({
+    const data: DMPExtensionNarrative = wrap({
       type: "dateRange",
       answer: { start: "2020-01-02", end: "2020-12-31" },
       meta: {
         schemaVersion: "1.0.0",
       }
     });
-    const csv = renderCSV(baseDisplay, data);
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     expect(csv).toMatch(/January.*2020 to December.*2020/);
   });
 
   it("handles numberRange", () => {
-    const data = wrap({
+    const data: DMPExtensionNarrative = wrap({
       type: "numberRange",
       answer: { start: 1, end: 10 },
       meta: {
         schemaVersion: "1.0.0",
       }
     });
-    const csv = renderCSV(baseDisplay, data);
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     expect(csv).toContain("1 to 10");
   });
 
   it("handles checkBoxes (joins with ;)", () => {
-    const data = wrap({
+    const data: DMPExtensionNarrative = wrap({
       type: "checkBoxes",
       answer: ["A", "B", "C"],
       meta: {
         schemaVersion: "1.0.0",
       }
     });
-    const csv = renderCSV(baseDisplay, data);
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     expect(csv).toContain("A; B; C");
   });
 
   it("handles multiselectBox", () => {
-    const data = wrap({
+    const data: DMPExtensionNarrative = wrap({
       type: "multiselectBox",
       answer: ["X", "Y"],
       meta: {
         schemaVersion: "1.0.0",
       }
     });
-    const csv = renderCSV(baseDisplay, data);
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     expect(csv).toContain("X; Y");
   });
 
   it("handles affiliationSearch with id", () => {
-    const data = wrap({
+    const data: DMPExtensionNarrative = wrap({
       type: "affiliationSearch",
       answer: { affiliationName: "Uni", affiliationId: "123" },
       meta: {
         schemaVersion: "1.0.0",
       }
     });
-    const csv = renderCSV(baseDisplay, data);
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     expect(csv).toContain("Uni (123)");
   });
 
   it("handles affiliationSearch without id", () => {
-    const data = wrap({
+    const data: DMPExtensionNarrative = wrap({
       type: "affiliationSearch",
       answer: { affiliationName: "Uni", affiliationId: null },
       meta: {
         schemaVersion: "1.0.0",
       }
     });
-    const csv = renderCSV(baseDisplay, data);
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     expect(csv).toContain("Uni");
   });
 
@@ -135,8 +146,8 @@ describe("renderCsv + answerToCSV integration", () => {
         schemaVersion: "1.0.0",
       }
     }
-    const data = wrap(obj as TableAnswerType);
-    const csv = renderCSV(baseDisplay, data);
+    const data: DMPExtensionNarrative = wrap(obj as TableAnswerType);
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     const expected = "{\"\"type\"\":\"\"text\"\",\"\"answer\"\":\"\"row1col2\"\"";
     expect(csv).toContain(expected);
   });
@@ -144,13 +155,20 @@ describe("renderCsv + answerToCSV integration", () => {
 
 describe("renderCsv general", () => {
   const mockData = {
-    dmproadmap_narrative: {
-      sections: [
-        {
-          section_title: "S1",
-          questions: [{ question_text: "Q1", answer_json: { type: "other", answer: "Ans1" } }]
-        }
-      ]
+    narrative: {
+      template: {
+        title: "Template",
+        section: [
+          {
+            title: "S1",
+            question: [{
+              text: "Q1", answer: {
+                json: { type: "other", answer: "Ans1" }
+              }
+            }]
+          }
+        ]
+      }
     }
   };
 
@@ -177,7 +195,7 @@ describe("renderCsv general", () => {
   it("handles empty sections gracefully", () => {
     const csv = renderCSV(
       { ...defaultDisplayOptions, includeSectionHeadings: true, includeQuestionText: true },
-      { dmproadmap_narrative: { sections: [] } }
+      { narrative: { template: { section: [] } } }
     );
     expect(csv).toContain("Section,Question,Answer"); // only header
   });

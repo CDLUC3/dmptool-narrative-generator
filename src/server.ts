@@ -1,14 +1,13 @@
 import * as dotenv from 'dotenv';
 import { Logger } from 'pino';
 import express, { Response } from "express";
-import { JwtPayload } from 'jsonwebtoken';
+import { JWTAccessToken } from "./helper";
 import cookieParser from "cookie-parser";
 import { renderCSV } from "./csv";
 import { renderHTML } from "./html";
 import { renderPDF } from "./pdf";
 import { renderDOCX } from "./docx";
 import { renderTXT } from "./txt";
-import { initLogger, logger, prepareObjectForLogs } from "./logger";
 import {
   safeNumber,
   safeBoolean,
@@ -16,8 +15,22 @@ import {
   getFontFamily
 } from "./helper";
 import { expressjwt, Request } from "express-jwt";
-import { getDMP } from "./dynamo";
-import { MySQLConnection } from "./mysql";
+import { DMPToolDMPType } from "@dmptool/types";
+import {
+  convertMySQLDateTimeToRFC3339,
+  EnvironmentEnum,
+  initializeLogger,
+  LogLevelEnum,
+} from "@dmptool/utils";
+import {
+  handleMissingMaDMP,
+  hasPermissionToDownloadNarrative,
+  loadMaDMPFromDynamo,
+  loadPlan,
+  loadPlansForUser,
+  PlanInterface,
+  UserPlanInterface
+} from "./dataAccess";
 
 dotenv.config();
 
@@ -58,25 +71,6 @@ interface OptionsInterface {
   font: FontInterface;
 }
 
-// ---------------- A DMP id and the user's access level ----------------
-export interface UserDMPInterface {
-  dmpId: string,
-  accessLevel: string,
-}
-
-// ---------------- JSON Web Token ----------------
-export interface JWTAccessToken extends JwtPayload {
-  id: number,
-  email: string,
-  givenName: string,
-  surName: string,
-  role: string,
-  affiliationId: string,
-  languageId: string,
-  jti: string,
-  expiresIn: number,
-}
-
 // ---------------- Convert query params into options ----------------
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function prepareOptions(params: any): OptionsInterface {
@@ -108,7 +102,7 @@ function prepareOptions(params: any): OptionsInterface {
 const auth = expressjwt({
   algorithms: ['HS256'],
   credentialsRequired: false,
-  secret: process.env.JWT_SECRET ?? "secret",
+  secret: process.env.JWT_SECRET,
 
   // Fetch the access token from the cookie
   getToken: function fromCookie(req) {
@@ -124,31 +118,6 @@ const auth = expressjwt({
   },
 });
 
-// ---------------- Authorization check ----------------
-function hasPermissionToDownloadNarrative(
-  // TODO: Update this to use the type once @dmptool/types supports the common standard
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any,
-  userDMPs: UserDMPInterface[],
-  token: JWTAccessToken | null
-): boolean {
-  const affiliations = [data.contact?.dmproadmap_affiliation?.affiliation_id?.identifier];
-
-  // Now collect all the contributors
-  if (Array.isArray(data.contributor)) {
-    affiliations.push(...data.contributor.map(c => c?.dmproadmap_affiliation?.affiliation_id?.identifier));
-  }
-
-  // Narrative downloads are always available for public DMPs
-  return data.dmproadmap_privacy === "public"
-    // SuperAdmins can always access DMP narratives
-    || token?.role === "SUPERADMIN"
-    // Admins can always access DMP narratives for DMPs that belong to their affiliation
-    || (token?.role === "ADMIN" && affiliations.includes(token?.affiliationId))
-    // Researchers can access the narrative if the DMP is one associated with their token
-    || userDMPs?.some(d => d.dmpId === data?.dmp_id?.identifier);
-}
-
 // ----------------- Process the incoming Accept types  -----------------
 function processAccept(accept: string): string[] {
   // The accept header may contain a lot of info and several types
@@ -157,8 +126,23 @@ function processAccept(accept: string): string[] {
   return rawTypes.split(",");
 }
 
+// ----------------- Verify required env variables ----------
+const requiredEnvVars = [
+  "APPLICATION_NAME",
+  "DYNAMODB_TABLE_NAME",
+  "DYNAMODB_ENDPOINT",
+  "EZID_BASE_URL",
+  "JWT_SECRET",
+  "RDS_HOST",
+  "SSM_ENDPOINT"
+];
+requiredEnvVars.forEach(envVar => {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+})
+
 // ----------------- Initialize the server  -----------------
-const sqlDataSource = new MySQLConnection();
 const app = express();
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
@@ -168,34 +152,24 @@ app.use(cookieParser());
 //   /dmps/11.11111/A1B2C3/narrative
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
 app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Response) => {
-  // Generate a unique requestId that we can use to tie log messages together
-  const requestId: string = [...Array(12)].map(() => {
-    return Math.floor(Math.random() * 16).toString(16)
-  }).join('');
+  // Process the environment variables
+  const logLevel: LogLevelEnum = process.env.LOG_LEVEL ? LogLevelEnum[process.env.LOG_LEVEL.toUpperCase()] : LogLevelEnum.INFO;
+  const env: EnvironmentEnum = process.env.ENV ? EnvironmentEnum[process.env.ENV?.toUpperCase()] : EnvironmentEnum.DEV;
+  const domainName = process.env.DOMAIN_NAME || "localhost:3000";
+  const applicationName = process.env.APPLICATION_NAME;
 
   // Get the format the user wants the narrative document in from either
   // the specified file extension OR the Accept header
   let accept: string;
-  if (req.params.ext) {
-    // Map extension to mime type
-    switch (req.params.ext.toLowerCase()) {
-      case "csv":
-        accept = CSV_TYPE;
-        break;
-      case "docx":
-        accept = DOCX_TYPE;
-        break;
-      case "json":
-        accept = JSON_TYPE;
-        break;
-      case "pdf":
-        accept = PDF_TYPE;
-        break;
-      case "txt":
-        accept = TXT_TYPE;
-        break;
-      default:
-        accept = HTML_TYPE; // fallback
+
+  if (req.params.ext && req.params.ext.length > 0) {
+    switch (req.params.ext[0].toLowerCase()) {
+      case "csv": accept = CSV_TYPE; break;
+      case "docx": accept = DOCX_TYPE; break;
+      case "json": accept = JSON_TYPE; break;
+      case "pdf": accept = PDF_TYPE; break;
+      case "txt": accept = TXT_TYPE; break;
+      default: accept = HTML_TYPE;
     }
   } else {
     accept = req.headers["accept"] || HTML_TYPE;
@@ -205,120 +179,170 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   const { version, display, margin, font } = prepareOptions(req.query);
   // Get the JWT if there is one
   const token = req.auth as JWTAccessToken
+
+  // Verify that a DMP Id was specified in the path
+  if (!req.params || !req.params.splat) {
+    res.status(400).send("Invalid request");
+    return;
+  }
+
   // Get the DMP id from the path
   const dmpId = req.params.splat.toString().replace(",", "/");
+  const fullDMPId = `${process.env.EZID_BASE_URL}/${dmpId}`;
 
-  const requestLogger: Logger = initLogger(
-    logger,                         // Base logger
+  // Initialize the logger
+  const requestLogger: Logger = initializeLogger('narrative-generator', logLevel);
+
+  requestLogger.debug(
     {
-      app: process.env.APP_NAME,    // Help identify entries for this application
-      env: process.env.ENV,         // The current environment (not necessarily the Node env)
-      requestId,                    // Unique id for the incoming GraphQL request
-      jti: token?.jti,              // The id of the JWT
-      userId: token?.id,            // The current user's id
-    }
-  );
-
-  requestLogger.info(
-    prepareObjectForLogs({
+      jti: token?.jti,
+      userId: token?.id,
       dmpId,
+      fullDMPId,
       version,
       format: accept,
       display,
       margin,
       font,
       allowedDMPs: token?.dmpIds ?? []
-    }),
-    `Received request for DMP narrative`
+    },
+    'Received request for DMP narrative'
   );
 
   try {
-    // Fetch the DMP's JSON from the DynamoDB Table
-    const data = await getDMP(requestLogger, dmpId, version);
-    // Fetch the list of DMPs the user has access to
-    const userDMPs = await sqlDataSource.getUserDMPs(requestLogger, token);
-
-    // Determine if the caller has permission to view the DMP's narrative
-    const hasPermission = hasPermissionToDownloadNarrative(data, userDMPs, token);
-
-    requestLogger.debug(data, "Retrieved DMP metadata file");
-
-    if (!hasPermission) {
-      requestLogger.warn("caller did not have permission to download narrative");
+    const plan: PlanInterface = await loadPlan(requestLogger, fullDMPId, env);
+    if (!plan) {
+      requestLogger.warn({ dmpId, jti: token?.jti }, "No Plan found");
+      // We return 404 here so that we're not signaling which DMP ids are valid
+      res.status(404).send("Plan not found");
+      return;
     }
 
-    if (data && hasPermission) {
-      const acceptedTypes = processAccept(accept);
-      if (acceptedTypes.includes(CSV_TYPE)) {
-        const csv = renderCSV(display, data);
-        requestLogger.debug("Generating CSV");
-        res.type("csv").send(csv);
-        return;
+    // Fetch all Plans that the current user has access to
+    const usersPlans: UserPlanInterface[] = await loadPlansForUser(
+      requestLogger,
+      token,
+      env
+    );
+    requestLogger.debug(
+      { dmpId, planId: plan.id, nbrPlansForUser: usersPlans.length, jti: token?.jti },
+      'Retrieved Plan data from RDS'
+    );
 
-      } else if (acceptedTypes.includes(DOCX_TYPE)) {
-        const html = renderHTML(display, margin, font, data);
-        // Render the html first. This will be used to generate the DOCX
-        const docx = await renderDOCX(
-          requestLogger,
-          data?.title || "Data management plan",
-          html,
-          margin,
-          font
-        );
-        requestLogger.debug("Generating DOCX");
-        res.setHeader("Content-Type", DOCX_TYPE);
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="${(data.title || "document").replace(/\W+/g, "-")}.docx"`
-        );
-        res.send(docx);
-        return;
+    // Fetch the latest maDMP record for the Plan from the DynamoDB table
+    let maDMP: DMPToolDMPType = await loadMaDMPFromDynamo(requestLogger, domainName, fullDMPId);
+    requestLogger.debug(
+      { dmpId, maDMPModified: maDMP?.dmp?.modified, jti: token?.jti },
+      'Retrieved maDMP metadata from DynamoDB'
+    );
 
-      } else if (acceptedTypes.includes(HTML_TYPE)) {
-        const html = renderHTML(display, margin, font, data);
-        requestLogger.debug("Generating HTML");
-        res.type("html").send(html);
-        return;
+    // Determine if the maDMP was missing or is out of date. If so, generate the
+    // current maDMP and update the DynamoDB record.
+    const rdsDate: string = convertMySQLDateTimeToRFC3339(plan?.modified);
+    if (!maDMP || rdsDate !== maDMP?.dmp?.modified) {
+      maDMP = await handleMissingMaDMP(
+        requestLogger,
+        env,
+        applicationName,
+        domainName,
+        plan,
+        rdsDate !== maDMP?.dmp?.modified
+      )
+    }
 
-      } else if (acceptedTypes.includes(JSON_TYPE)) {
-        requestLogger.debug("Generating JSON");
-        res.type("json").send(data);
-        return;
+    // If the maDMP record could not be generated or retrieved, we need to bail out
+    if (!maDMP || !maDMP.dmp) {
+      requestLogger.warn({ dmpId, jti: token?.jti }, "Unable to generate narrative for DMP");
+      res.status(500).send("Unable to generate a narrative at this time");
+      return;
+    }
 
-      } else if (acceptedTypes.includes(PDF_TYPE)) {
-        // Render the HTML first which is then used to render the PDF
-        const pdf = await renderPDF(renderHTML(display, margin, font, data));
-        requestLogger.debug("Generating PDF");
-        res.setHeader("Content-Type", PDF_TYPE);
-        res.setHeader(
-          "Content-Disposition",
-          `inline; filename="${(data.title || "document").replace(/\W+/g, "-")}.pdf"`
-        );
-        res.send(pdf);
-        return;
-
-      } else if (acceptedTypes.includes(TXT_TYPE)) {
-        // Render the HTML first which is then used to render the TXT
-        const txt = await renderTXT(renderHTML(display, margin, font, data));
-        requestLogger.debug("Generating TXT");
-        res.type("txt").send(txt);
-        return;
-
-      } else {
-        requestLogger.debug(`Unsupported format requested: ${accept}`);
-        // The format requested is not supported!
-        res.status(406)
-          .send("Not Acceptable: Supported formats are HTML, PDF, CSV, DOCX, TXT");
-      }
-    } else {
-      requestLogger.info("DMP not found or user did not have permission to download narrative");
-      // The DMP id was not found or the user did not have permission
+    // Determine if the caller has permission to view the DMP's narrative
+    const hasPermission = hasPermissionToDownloadNarrative(maDMP, usersPlans, token);
+    if (!hasPermission) {
+      requestLogger.warn({ dmpId, jti: token?.jti }, "User does not have permission to download narrative");
+      // We return 404 here so that we're not signaling which DMP ids are valid
       res.status(404).send("DMP not found");
       return;
     }
+
+    // Determine which format the user requested and render it accordingly.
+    const acceptedTypes = processAccept(accept);
+    if (acceptedTypes.includes(CSV_TYPE)) {
+      const csv = renderCSV(display, maDMP.dmp);
+      requestLogger.debug({ dmpId, jti: token?.jti }, "Generating CSV");
+      res.type("csv").send(csv);
+      return;
+
+    } else if (acceptedTypes.includes(DOCX_TYPE)) {
+      const html = renderHTML(display, margin, font, maDMP.dmp);
+      // Render the HTML first. This will be used to generate the DOCX
+      const docx = await renderDOCX(
+        requestLogger,
+        maDMP.dmp?.title || "Data management plan",
+        html,
+        margin,
+        font
+      );
+      requestLogger.debug({ dmpId, jti: token?.jti }, "Generating DOCX");
+      res.setHeader("Content-Type", DOCX_TYPE);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${(maDMP.dmp?.title || "document").replace(/\W+/g, "-")}.docx"`
+      );
+      res.send(docx);
+      return;
+
+    } else if (acceptedTypes.includes(HTML_TYPE)) {
+      const html = renderHTML(display, margin, font, maDMP.dmp);
+      requestLogger.debug({ dmpId, jti: token?.jti }, "Generating HTML");
+      res.type("html").send(html);
+      return;
+
+    } else if (acceptedTypes.includes(JSON_TYPE)) {
+      requestLogger.debug({ dmpId, jti: token?.jti }, "Generating JSON");
+      res.type("json").send(maDMP.dmp);
+      return;
+
+    } else if (acceptedTypes.includes(PDF_TYPE)) {
+      // Render the HTML which is then used to render the PDF
+      const pdf = await renderPDF(
+        renderHTML(display, margin, font, maDMP.dmp)
+      );
+      requestLogger.debug({ dmpId, jti: token?.jti }, "Generating PDF");
+      res.setHeader("Content-Type", PDF_TYPE);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${(maDMP.dmp.title || "document").replace(/\W+/g, "-")}.pdf"`
+      );
+      res.send(pdf);
+      return;
+
+    } else if (acceptedTypes.includes(TXT_TYPE)) {
+      // Render the HTML first which is then used to render the TXT
+      const txt = await renderTXT(
+        renderHTML(display, margin, font, maDMP.dmp)
+      );
+      requestLogger.debug({ dmpId, jti: token?.jti }, "Generating TXT");
+      res.type("txt").send(txt);
+      return;
+
+    } else {
+      requestLogger.debug({ dmpId, jti: token?.jti }, `Unsupported format requested: ${accept}`);
+      // The format requested is not supported!
+      res.status(406)
+        .send("Not Acceptable: Supported formats are HTML, PDF, CSV, DOCX, TXT");
+    }
+
+    // If it ends up here somehow return a 500
+    res.status(500)
+      .send("Unable to process your request at this time.");
+    return;
   } catch (e) {
-    requestLogger.error(e);
-    res.status(500).json({ error: "Document generation failed" });
+    requestLogger.fatal({ dmpId, jti: token?.jti, err: e }, e.message);
+    res.status(500)
+      .send("Document generation failed");
+    return;
   }
 });
 
@@ -327,15 +351,13 @@ app.get("/narrative-health", (_: Request, res: Response) => res.send("ok"));
 
 // ----------------- Startup the server  -----------------
 const startServer = async () => {
-  await sqlDataSource.initPromise;
   const PORT = process.env.PORT || 4030;
-  app.listen(PORT, () => console.log(`${process.env.APP_NAME} listening on port ${PORT}`));
+  app.listen(PORT, () => console.log(`${process.env.APPLICATION_NAME} listening on port ${PORT}`));
 }
 
 // Graceful shutdown
 const shutdown = async () => {
   try {
-    await sqlDataSource.close();
     process.exit(0);
   } catch (error) {
     console.log('Error shutting down server:', error);

@@ -1,13 +1,14 @@
 import {
   AffiliationSearchAnswerType,
   AnyAnswerType,
-  DateRangeAnswerType,
+  DateRangeAnswerType, DMPToolDMPType,
   NumberRangeAnswerType,
   TextAreaAnswerType
 } from "@dmptool/types";
 import { DisplayOptionsInterface } from "./server";
 import { formatDate } from "./helper";
 import { stringify } from "csv-stringify/sync";
+import {DMPExtensionNarrative} from "@dmptool/utils";
 
 function answerToCSV (json: AnyAnswerType): string | number | boolean {
   let answer: string | number | boolean;
@@ -50,15 +51,13 @@ function answerToCSV (json: AnyAnswerType): string | number | boolean {
   return answer ?? '';
 }
 
-// TODO: Update the type here once the common standard is in @dmptool/types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function renderCSV(display: DisplayOptionsInterface, data: any): string {
+export function renderCSV(display: DisplayOptionsInterface, data: DMPToolDMPType["dmp"]): string {
   const columns: string[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows: any[] = [];
 
   // If there is narrative content
-  if (data.dmproadmap_narrative?.sections) {
+  if (data.narrative?.template?.section) {
     // Define the column headings
     if (display.includeSectionHeadings) {
       columns.push('Section');
@@ -69,19 +68,17 @@ export function renderCSV(display: DisplayOptionsInterface, data: any): string {
     columns.push('Answer');
 
     // Define the rows
-    // TODO: Update the type here once the common standard is in @dmptool/types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data.dmproadmap_narrative?.sections?.map((section: any) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return section.questions?.map((question: any) => {
+    const narrative = data.narrative?.template as DMPExtensionNarrative;
+    narrative?.section?.map((section) => {
+      return section.question?.map((question) => {
         const row = [];
-        const answer = answerToCSV(question.answer_json);
+        const answer = answerToCSV(question.answer?.json);
 
         if (display.includeSectionHeadings) {
-          row.push(section.section_title);
+          row.push(section.title);
         }
         if (display.includeQuestionText) {
-          row.push(question.question_text);
+          row.push(question.text);
         }
         row.push(answer ?? '');
         rows.push(row);
