@@ -236,10 +236,10 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
       'Retrieved maDMP metadata from DynamoDB'
     );
 
-    // Determine if the maDMP was missing or is out of date. If so, generate the
-    // current maDMP and update the DynamoDB record.
+    // Determine if the maDMP was missing or is out of date or missing the narrative.
+    // If so, generate the current maDMP and update the DynamoDB record.
     const rdsDate: string = convertMySQLDateTimeToRFC3339(plan?.modified);
-    if (!maDMP || rdsDate !== maDMP?.dmp?.modified) {
+    if (!maDMP || rdsDate !== maDMP?.dmp?.modified || !maDMP?.dmp?.narrative) {
       maDMP = await handleMissingMaDMP(
         requestLogger,
         env,
