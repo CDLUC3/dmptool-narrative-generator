@@ -7,6 +7,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 - 
 # Updated
+- Fixed issue with contact id display 
 - Upgraded dependencies
 - Update the `server` file to use the new `dataAccess` file and to get its logger from `@dmptool/utils`
 - Updated `server` file so that it will first try to get maDMP from Dynamo, will then try to build the maDMP from the MySQL record if none was found in Dynamo (and save it to Dynamo)

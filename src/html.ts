@@ -188,9 +188,10 @@ Handlebars.registerHelper("doiForDisplay", function (doi: string): string {
 Handlebars.registerHelper(
   "contactIdentifierForDisplay",
   function (contactId: DMPToolDMPType["dmp"]["contact"]["contact_id"]): string {
-    if (contactId?.type === "orcid" && contactId?.identifier) {
-      const idForDisplay = contactId?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
-      return `- <strong>ORCID:</strong> <a href="${contactId?.identifier}" target="_blank">${idForDisplay}</a>`
+    const id = Array.isArray(contactId) ? contactId[0] : contactId;
+    if (id?.type === "orcid" && id?.identifier) {
+      const idForDisplay = id?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
+      return `- <strong>ORCID:</strong> <a href="${id?.identifier}" target="_blank">${idForDisplay}</a>`
     }
  }
 );
