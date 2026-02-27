@@ -26,6 +26,7 @@ import {
  */
 function answerToHTML (json: AnyAnswerType): string {
   let out = "<p>Not yet answered.</p>";
+  if (!json) return out;
 
   // If the answer isn't a known type, skip it
   if (!Object.keys(AnswerSchemaMap).includes(json['type'])) {
@@ -145,6 +146,8 @@ function answerToHTML (json: AnyAnswerType): string {
  * @returns The transformed work type.
  */
 function workTypeForDisplay(workType: string, pluralizeIt = true): string {
+  if (!workType) return "";
+
   // Capitalize the type name and replace underscores with spaces
   let typeLabel = workType.replace(/_/g, " ");
   typeLabel = pluralizeIt ? pluralize(typeLabel) : typeLabel;
@@ -162,6 +165,8 @@ function relatedWorksForType(
   workType: string,
   works: DMPToolDMPType["dmp"]["related_identifier"]
 ): string {
+  if (!Array.isArray(works) || works.length < 1) return "";
+
   const out: string[] = works.filter((work: { type: string, identifier: string }) => work.type.includes(workType))
     .map((work) => {
       return work?.citation ? work.citation : `<a href="${work.identifier}" target="_blank">${work.identifier}</a>`;
@@ -179,7 +184,7 @@ Handlebars.registerHelper("formatDate", formatDate);
  * Format a DOI for display.
  */
 Handlebars.registerHelper("doiForDisplay", function (doi: string): string {
-  return doi.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, "");
+  return doi?.replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, "");
 });
 
 /**
@@ -188,9 +193,12 @@ Handlebars.registerHelper("doiForDisplay", function (doi: string): string {
 Handlebars.registerHelper(
   "contactIdentifierForDisplay",
   function (contactId: DMPToolDMPType["dmp"]["contact"]["contact_id"]): string {
-    if (contactId?.type === "orcid" && contactId?.identifier) {
-      const idForDisplay = contactId?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
-      return `- <strong>ORCID:</strong> <a href="${contactId?.identifier}" target="_blank">${idForDisplay}</a>`
+    if (!contactId) return "";
+
+    const id = Array.isArray(contactId) ? contactId[0] : contactId;
+    if (id?.type === "orcid" && id?.identifier) {
+      const idForDisplay = id?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
+      return `- <strong>ORCID:</strong> <a href="${id?.identifier}" target="_blank">${idForDisplay}</a>`
     }
  }
 );
@@ -201,7 +209,7 @@ Handlebars.registerHelper(
 Handlebars.registerHelper(
   "contributorsForRole",
   function(role: string, contributors: DMPToolDMPType["dmp"]["contributor"]): string {
-    if (!Array.isArray(contributors) || contributors.length < 1) return undefined;
+    if (!Array.isArray(contributors) || contributors.length < 1) return "";
     const out: string[] = contributors.filter((contributor) => contributor.role.includes(role))
       .map((contributor) => {
           return contributor?.contributor_id?.identifier ? `<a href="${contributor.contributor_id.identifier}" target="_blank">${contributor.name}</a>` : contributor.name;
@@ -239,6 +247,7 @@ Handlebars.registerHelper(
 Handlebars.registerHelper(
   "affiliationForDisplay",
   function(affiliation: DMPToolDMPType["dmp"]["contact"]["affiliation"]): string {
+    if (!Array.isArray(affiliation) || affiliation.length < 1) return "";
     return affiliation[0]?.affiliation_id?.identifier ? `<a href="${affiliation[0].affiliation_id.identifier}" target="_blank">${affiliation[0].name}</a>` : affiliation[0]?.name;
   }
 );
@@ -272,6 +281,7 @@ Handlebars.registerHelper("copyrightForDisplay", function(visibility: string): s
 Handlebars.registerHelper(
   "fundersForDisplay",
   function(project: DMPToolDMPType["dmp"]["project"][]): string {
+    if (!Array.isArray(project) || project.length < 1) return "";
     let funding = project.map((project) => project.funding).flat();
     funding = funding.filter((fund) => fund !== null && fund !== undefined);
     return funding.map((fund) => {
@@ -286,6 +296,7 @@ Handlebars.registerHelper(
 Handlebars.registerHelper(
   "displayProjectAbstract",
   function(project: DMPToolDMPType["dmp"]["project"][]): string {
+    if (!Array.isArray(project) || project.length < 1) return "";
     return project[0]?.description;
   }
 );
@@ -296,6 +307,7 @@ Handlebars.registerHelper(
 Handlebars.registerHelper(
   "displayProjectStartDate",
   function(project: DMPToolDMPType["dmp"]["project"][]): string {
+    if (!Array.isArray(project) || project.length < 1) return "";
     const dates: string[] = project.map((project) => formatDate(project.start, false)).flat();
     return dates.length === 0 ? "None specified" : dates.sort()[0];
   }
@@ -307,6 +319,7 @@ Handlebars.registerHelper(
 Handlebars.registerHelper(
   "displayProjectEndDate",
   function (project: DMPToolDMPType["dmp"]["project"][]): string {
+    if (!Array.isArray(project) || project.length < 1) return "";
     const dates: string[] = project.map((project) => formatDate(project.end, false)).flat();
     return dates.length === 0 ? "None specified" : dates.sort()[dates.length - 1];
   }

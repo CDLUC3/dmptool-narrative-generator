@@ -130,11 +130,9 @@ function processAccept(accept: string): string[] {
 const requiredEnvVars = [
   "APPLICATION_NAME",
   "DYNAMODB_TABLE_NAME",
-  "DYNAMODB_ENDPOINT",
   "EZID_BASE_URL",
   "JWT_SECRET",
-  "RDS_HOST",
-  "SSM_ENDPOINT"
+  "RDS_HOST"
 ];
 requiredEnvVars.forEach(envVar => {
   if (!process.env[envVar]) {
@@ -157,6 +155,8 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   const env: EnvironmentEnum = process.env.ENV ? EnvironmentEnum[process.env.ENV?.toUpperCase()] : EnvironmentEnum.DEV;
   const domainName = process.env.DOMAIN_NAME || "localhost:3000";
   const applicationName = process.env.APPLICATION_NAME;
+  const ezidBaseURL = process.env.EZID_BASE_URL || 'https://doi.org/';
+
 
   // Get the format the user wants the narrative document in from either
   // the specified file extension OR the Accept header
@@ -188,7 +188,7 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
 
   // Get the DMP id from the path
   const dmpId = req.params.splat.toString().replace(",", "/");
-  const fullDMPId = `${process.env.EZID_BASE_URL}/${dmpId}`;
+  const fullDMPId = ezidBaseURL.endsWith('/') ? `${ezidBaseURL}${dmpId}` : `${ezidBaseURL}/${dmpId}`;
 
   // Initialize the logger
   const requestLogger: Logger = initializeLogger('narrative-generator', logLevel);
@@ -236,10 +236,10 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
       'Retrieved maDMP metadata from DynamoDB'
     );
 
-    // Determine if the maDMP was missing or is out of date. If so, generate the
-    // current maDMP and update the DynamoDB record.
+    // Determine if the maDMP was missing or is out of date or missing the narrative.
+    // If so, generate the current maDMP and update the DynamoDB record.
     const rdsDate: string = convertMySQLDateTimeToRFC3339(plan?.modified);
-    if (!maDMP || rdsDate !== maDMP?.dmp?.modified) {
+    if (!maDMP || rdsDate !== maDMP?.dmp?.modified || !maDMP?.dmp?.narrative) {
       maDMP = await handleMissingMaDMP(
         requestLogger,
         env,
