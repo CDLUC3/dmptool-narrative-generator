@@ -1,7 +1,6 @@
 import HtmlToDocx from "@turbodocx/html-to-docx";
 import { FontInterface, MarginInterface } from "./server";
 import { Logger } from "pino";
-import { prepareObjectForLogs } from "./logger";
 
 // Convert millimeters to TWIPs (Twentieth of a Point)
 function mmToTwip (mm: number): number {
@@ -66,7 +65,8 @@ export async function renderDOCX(
     }
   } catch (err) {
     const msg = "Unable to render DOCX."
-    requestLogger.error(prepareObjectForLogs({ title, margin, font, err, html }), msg);
+    requestLogger.error({ title, margin, font, err, html }, msg);
+    // eslint-disable-next-line preserve-caught-error
     throw new Error(msg);
   }
 }

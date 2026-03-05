@@ -13,7 +13,7 @@ describe("renderHtmlTemplate", () => {
   const margin = { marginTop: 10, marginRight: 10, marginBottom: 10, marginLeft: 10 };
   const font = { fontFamily: "Arial", fontSize: "12pt", lineHeight: 120 };
 
-  it("renders cover page appropriately for un-registered DMPs", () => {
+  it("renders cover page  for un-registered DMPs", () => {
     const html = renderHTML(display, margin, font, {
       title: "Test Plan",
       dmp_id: { identifier: "https://doi.org/10.1234/abcd" },
@@ -23,10 +23,13 @@ describe("renderHtmlTemplate", () => {
           type: "orcid",
           identifier: "https://orcid.org/0000-0001-2345-6789"
         },
-        dmproadmap_affiliation: {
-          affiliation_id: { identifier: "http://example.com/affil" },
+        affiliation: [{
+          affiliation_id: {
+            identifier: "http://example.com/affil",
+            type: "url"
+          },
           name: "Example University",
-        },
+        }],
       },
       contributor: [
         {
@@ -39,14 +42,19 @@ describe("renderHtmlTemplate", () => {
           funding: [
             {
               name: "NSF",
-              funder_id: { identifier: "http://funder.org/nsf" },
+              funder_id: {
+                identifier: "http://funder.org/nsf",
+                type: "url"
+              },
             },
           ],
           start: "2024-01-01",
           end: "2024-12-31",
         },
       ],
-      dmproadmap_template: { title: "Generic Template" },
+      narrative: {
+        template: { title: "Generic Template" },
+      },
       description: "This is an abstract.",
       modified: "2024-02-01",
     });
@@ -60,7 +68,10 @@ describe("renderHtmlTemplate", () => {
   it("renders cover page appropriately for registered DMPs", () => {
     const html = renderHTML(display, margin, font, {
       title: "Test Plan",
-      dmp_id: { identifier: "https://doi.org/10.1234/abcd" },
+      dmp_id: {
+        identifier: "https://doi.org/10.1234/abcd",
+        type: "doi",
+      },
       registered: "2025-08-01T10:50:23Z",
       contact: {
         name: "Alice",
@@ -68,10 +79,13 @@ describe("renderHtmlTemplate", () => {
           type: "other",
           identifier: "tester@example.com"
         },
-        dmproadmap_affiliation: {
-          affiliation_id: { identifier: "http://example.com/affil" },
+        affiliation: [{
+          affiliation_id: {
+            identifier: "http://example.com/affil",
+            type: "url"
+          },
           name: "Example University",
-        },
+        }],
       },
       contributor: [
         {
@@ -84,14 +98,19 @@ describe("renderHtmlTemplate", () => {
           funding: [
             {
               name: "NSF",
-              funder_id: { identifier: "http://funder.org/nsf" },
+              funder_id: {
+                identifier: "http://funder.org/nsf",
+                type: "url"
+              },
             },
           ],
           start: "2024-01-01",
           end: "2024-12-31",
         },
       ],
-      dmproadmap_template: { title: "Generic Template" },
+      narrative: {
+        template: { title: "Generic Template" }
+      },
       description: "This is an abstract.",
       modified: "2024-02-01",
     });
@@ -105,25 +124,57 @@ describe("renderHtmlTemplate", () => {
   it("renders narrative sections and unanswered questions", () => {
     const html = renderHTML(display, margin, font, {
       title: "Narrative Test",
-      dmp_id: { identifier: "10.5678/efgh" },
-      contact: { name: "Bob", contact_id: { identifier: "1234" }, dmproadmap_affiliation: { affiliation_id: { identifier: "id" }, name: "Org" } },
+      dmp_id: {
+        identifier: "10.5678/efgh",
+        type: "other"
+      },
+      contact: {
+        name: "Bob",
+        contact_id: {
+          identifier: "1234",
+          type: "other"
+        },
+        affiliation: [{
+          affiliation_id: {
+            identifier: "id",
+            type: "other"
+          },
+          name: "Org"
+        }]
+      },
       contributor: [],
       project: [],
-      dmproadmap_template: { title: "Template" },
       description: "desc",
       modified: "2024-01-01",
-      dmproadmap_narrative: {
-        sections: [
-          {
-            section_title: "Data Collection",
-            section_description: "Section description",
-            questions: [
-              { question_text: "What data?", answer_json: { type: "textArea", answer: "Some data" } },
-              { question_text: "Unanswered?" }, // triggers includeUnansweredQuestions
-            ],
-          },
-        ],
-      },
+      narrative: {
+        template: {
+          title: "Template",
+          section: [
+            {
+              title: "Data Collection",
+              description: "Section description",
+              order: 1,
+              question: [
+                {
+                  text: "What data?",
+                  order: 1,
+                  answer: {
+                    json: {
+                      type: "textArea",
+                      answer: "Some data",
+                      meta: { schemaVersion: '1.0' }
+                    }
+                  }
+                },
+                {
+                  text: "Unanswered?",
+                  order: 2
+                }, // triggers includeUnansweredQuestions
+              ],
+            },
+          ],
+        },
+      }
     });
 
     expect(html).toContain("Data Collection");
@@ -134,37 +185,83 @@ describe("renderHtmlTemplate", () => {
   it("renders related works grouped by type", () => {
     const html = renderHTML(display, margin, font, {
       title: "Works Test",
-      dmp_id: { identifier: "id" },
-      contact: { name: "Y", contact_id: { identifier: "id" }, dmproadmap_affiliation: { affiliation_id: { identifier: "id" }, name: "Aff" } },
+      dmp_id: {
+        identifier: "id",
+        type: "other"
+      },
+      contact: {
+        name: "Y",
+        contact_id: {
+          identifier: "id",
+          type: "other"
+        },
+        affiliation: [{
+          affiliation_id: {
+            identifier: "id",
+            type: "other"
+          },
+          name: "Aff"
+        }]
+      },
       contributor: [],
       project: [],
-      dmproadmap_template: { title: "T" },
+      narrative: {
+        title: "T"
+      },
       description: "desc",
       modified: "2024-01-01",
-      dmproadmap_related_identifiers: [
-        { work_type: ["dataset"], citation: "Dataset citation" },
-        { work_type: ["publication"], identifier: "http://paper" },
+      related_identifier: [
+        {
+          type: ["dataset"],
+          identifier: "http://example.com/dataset",
+          relation_type: ["isCitedBy"]
+        },
+        {
+          type: ["publication"],
+          identifier: "http://example.com/paper",
+          relation_type: ["isSupplementTo"]
+        },
       ],
     });
 
-    expect(html).toContain("Dataset citation");
-    expect(html).toContain("http://paper");
+    expect(html).toContain("http://example.com/dataset");
+    expect(html).toContain("http://example.com/paper");
     expect(html).toContain("Related Works");
   });
 
   it("handles empty arrays gracefully", () => {
     const html = renderHTML(display, margin, font, {
       title: "Empty Test",
-      dmp_id: { identifier: "id" },
-      contact: { name: "Z", contact_id: { identifier: "id" }, dmproadmap_affiliation: { affiliation_id: { identifier: "id" }, name: "Aff" } },
+      dmp_id: {
+        identifier: "id",
+        type: "other"
+      },
+      contact: {
+        name: "Z",
+        contact_id: {
+          identifier: "id",
+          type: "other"
+        },
+        affiliation: [{
+          affiliation_id: {
+            identifier: "id",
+            type: "other"
+          },
+          name: "Aff"
+        }]
+      },
       contributor: [],
       project: [],
-      dmproadmap_template: { title: "T" },
       description: "",
       modified: "2024-01-01",
-      dmproadmap_narrative: { sections: [] },
+      narrative: {
+        template: {
+          title: "T",
+          section: []
+        }
+      },
       dataset: [],
-      dmproadmap_related_identifiers: [],
+      related_identifiers: [],
     });
 
     expect(html).toContain("Empty Test");
