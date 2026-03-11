@@ -1,12 +1,15 @@
+# dmptool-narrative-generator
 
-# Added
+## Added
 - Added override for `minimatch` dependency
 - Added `@dmptool/utils` package
 - Added new `dataAccess` file that works with the `@dmptool/utils` package
 - Added a Dependabot config file
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
-- 
-# Updated
+
+## Updated
+- Updated override for `minimatch` dependency and updated all dependencies
+- Added `renovate` config
 - Fixed issue with narrative generation by adding undefined checks to handlebars functions
 - Upgraded dependencies
 - Update the `server` file to use the new `dataAccess` file and to get its logger from `@dmptool/utils`
@@ -15,6 +18,6 @@
 - Updated `dotenv`, `mysql2`, `@eslint/js`, `fast-check` and `puppeteer` dependencies
 - Updated the `glob` and `js-yaml` dependencies
 
-# Deleted
+## Deleted
 - Removed the old `logger`, `mysql` and `dynamo` files
 - Removed the `@types/eslint__js` dependency as `@eslint/js` includes its own types now
