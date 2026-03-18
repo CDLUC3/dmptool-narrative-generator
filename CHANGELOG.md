@@ -1,6 +1,7 @@
 # dmptool-narrative-generator
 
 ## Added
+- Added override for `fast-xml-parser` and `flatted` dependencies
 - Added override for `minimatch` dependency
 - Added `@dmptool/utils` package
 - Added new `dataAccess` file that works with the `@dmptool/utils` package
@@ -19,5 +20,7 @@
 - Updated the `glob` and `js-yaml` dependencies
 
 ## Deleted
+- Removed override for `minimatch` dependency
+- Removed old dependabot config (we now use renovate)
 - Removed the old `logger`, `mysql` and `dynamo` files
 - Removed the `@types/eslint__js` dependency as `@eslint/js` includes its own types now
