@@ -3,16 +3,16 @@ import { FontInterface, MarginInterface } from "./server";
 import { Logger } from "pino";
 
 // Convert millimeters to TWIPs (Twentieth of a Point)
-function mmToTwip (mm: number): number {
-  if (mm || mm <= 0) return 0;
+function mmToTwip(mm: number): number {
+  if (!mm || mm <= 0) return 0;
 
   // Convert mm to TWIP
   return Math.round((mm / 25.4) * 1440);
 }
 
 // Convert pixels to HIP (Half of a Point)
-function pxToHip (px: number): number {
-  if (px || px <= 0) return 0;
+function pxToHip(px: number): number {
+  if (!px || px <= 0) return 0;
 
   // Convert pixels to points
   const pts = (px / 96) * 72;
@@ -32,6 +32,21 @@ export async function renderDOCX(
   margin: MarginInterface,
   font: FontInterface,
 ): Promise<Buffer> {
+  const processedHtml = html
+    .replace(/<(td|th)(\s[^>]*)?>/gi, (_, tag, attrs = '') => {
+      const style = 'border:1px solid black;padding:2px;';
+      if (/style\s*=/i.test(attrs)) {
+        return `<${tag}${attrs.replace(/style\s*=\s*["']([^"']*)["']/i, `style="$1;${style}"`)} >`;
+      }
+      return `<${tag}${attrs} style="${style}">`;
+    })
+    .replace(/<table(\s[^>]*)?>/gi, (_, attrs = '') => {
+      const style = 'border-collapse:collapse;';
+      if (/style\s*=/i.test(attrs)) {
+        return `<table${attrs.replace(/style\s*=\s*["']([^"']*)["']/i, `style="$1;${style}"`)} >`;
+      }
+      return `<table${attrs} style="${style}">`;
+    });
   const documentOptions = {
     title,
     orientation: orientations.portrait,
@@ -48,10 +63,18 @@ export async function renderDOCX(
     pageNumber: true,
     font: font.fontFamily,
     fontSize: pxToHip(Number(font.fontSize.replace("px", ""))),
+    table: {
+      borderOptions: {
+        size: 4,           // thickness
+        stroke: "single",  // border style
+        color: "000000",   // border color
+      },
+      addSpacingAfter: true,
+    },
   };
 
   try {
-    const doc: ArrayBuffer | Buffer | Blob = await HtmlToDocx(html, null, documentOptions);
+    const doc: ArrayBuffer | Buffer | Blob = await HtmlToDocx(processedHtml, null, documentOptions);
 
     // The HtmlToDocx can return one of three types but we need it to be a Buffer
     if (doc instanceof Buffer) {
