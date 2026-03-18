@@ -1,6 +1,18 @@
 import request from 'supertest';
 import { Logger } from 'pino';
 import { DMPToolDMPType } from '@dmptool/types';
+
+process.env.APPLICATION_NAME = 'test-app';
+process.env.DOMAIN_NAME = 'example.com';
+process.env.DYNAMODB_TABLE_NAME = 'test-table';
+process.env.DYNAMODB_ENDPOINT = 'test-endpoint';
+process.env.ENV = 'tst';
+process.env.EZID_BASE_URL = 'test-ezid';
+process.env.JWT_SECRET = 'test-secret';
+process.env.LOG_LEVEL = 'debug';
+process.env.RDS_HOST = 'test-rds';
+process.env.SSM_ENDPOINT = 'test-ssm';
+
 import app from '../server';
 
 import * as dataAccess from '../dataAccess';
@@ -46,11 +58,6 @@ const mockLogger = {
   error: jest.fn(),
   fatal: jest.fn(),
 } as unknown as Logger;
-
-process.env.ENV = 'tst';
-process.env.LOG_LEVEL = 'debug';
-process.env.APPLICATION_NAME = 'test-app';
-process.env.DOMAIN_NAME = 'example.com';
 
 describe('Server', () => {
   let mockPlan: PlanInterface;

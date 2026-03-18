@@ -27,6 +27,7 @@ services:
       - "REGION=us-west-2"
       - "ENV=dev"
       - "NODE_ENV=development"
+      - "PORT=4030"
 
       - "RDS_HOST=apollo-mysql"
       - "RDS_PORT=3306"

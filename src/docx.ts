@@ -66,6 +66,7 @@ export async function renderDOCX(
   } catch (err) {
     const msg = "Unable to render DOCX."
     requestLogger.error({ title, margin, font, err, html }, msg);
+    // eslint-disable-next-line preserve-caught-error
     throw new Error(msg);
   }
 }
