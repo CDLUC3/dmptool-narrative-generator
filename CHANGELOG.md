@@ -9,6 +9,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `html.ts` to format layout for `researchOutputTable` question types
 - Updated override for `minimatch` dependency and updated all dependencies
 - Added `renovate` config
 - Fixed issue with narrative generation by adding undefined checks to handlebars functions
