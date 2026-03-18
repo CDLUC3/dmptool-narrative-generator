@@ -9,6 +9,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `docx.ts` so that borders display around tables
 - Updated `html.ts` to format layout for `researchOutputTable` question types
 - Updated override for `minimatch` dependency and updated all dependencies
 - Added `renovate` config
