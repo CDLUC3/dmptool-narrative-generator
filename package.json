@@ -22,7 +22,7 @@
     "trivy-med": "./src/scripts/trivy-med.sh"
   },
   "overrides": {
-    "fast-xml-parser": "5.5.6",
+    "fast-xml-parser": "5.5.7",
     "flatted": "3.4.2"
   },
   "dependencies": {
