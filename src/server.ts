@@ -240,13 +240,14 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
     // If so, generate the current maDMP and update the DynamoDB record.
     const rdsDate: string = convertMySQLDateTimeToRFC3339(plan?.modified);
     if (!maDMP || rdsDate !== maDMP?.dmp?.modified || !maDMP?.dmp?.narrative) {
+      const outdated: boolean = maDMP?.dmp?.modified && rdsDate !== maDMP?.dmp?.modified
       maDMP = await handleMissingMaDMP(
         requestLogger,
         env,
         applicationName,
         domainName,
         plan,
-        rdsDate !== maDMP?.dmp?.modified
+        outdated
       )
     }
 
