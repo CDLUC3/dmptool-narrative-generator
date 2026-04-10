@@ -1,6 +1,7 @@
 # dmptool-narrative-generator
 
 ## Added
+- Added override for `axios` dependency
 - Added override for `fast-xml-parser` and `flatted` dependencies
 - Added override for `minimatch` dependency
 - Added `@dmptool/utils` package
@@ -9,6 +10,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `puppeteer` and `turbodocx/html-to-docx` dependencies
 - Updated renovate config to rebase when behind the base branch
 - Fixed an issue with a check to determine if the maDMP is missing or just outdated
 - Updated `docx.ts` so that borders display around tables
@@ -24,6 +26,7 @@
 - Updated the `glob` and `js-yaml` dependencies
 
 ## Deleted
+- Removed overrides for `picomatch`, `brace-expansion`, `flatted`, `lodash` and `path-to-regexp`
 - Removed override for `minimatch` dependency
 - Removed old dependabot config (we now use renovate)
 - Removed the old `logger`, `mysql` and `dynamo` files
