@@ -22,8 +22,8 @@
     "trivy-med": "./src/scripts/trivy-med.sh"
   },
   "overrides": {
-    "fast-xml-parser": "5.5.6",
-    "flatted": "3.4.2"
+    "axios": "1.15.0",
+    "fast-xml-parser": "5.5.7"
   },
   "dependencies": {
     "@dmptool/types": "^3.1.3",
@@ -42,7 +42,7 @@
     "mysql2": "^3.19.1",
     "pino": "^10.3.1",
     "pluralize": "^8.0.0",
-    "puppeteer": "^24.39.0"
+    "puppeteer": "^24.40.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

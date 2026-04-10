@@ -15,8 +15,60 @@ import {
   DMPToolDMPType,
   NumberRangeAnswerType,
   TableAnswerType,
-  TextAreaAnswerType
+  TextAreaAnswerType,
+  DefaultResearchOutputAccessLevelColumn
 } from "@dmptool/types";
+
+/**
+ * Render a single cell from a researchOutputTable row.
+ * Handles the specialized column types that only appear in research output tables,
+ * then falls back to the generic answerToHTML for standard types.
+ */
+function researchOutputColumnToHTML(col: AnyAnswerType): string {
+  switch (col.type) {
+    case "repositorySearch": {
+      if (!Array.isArray(col.answer) || col.answer.length === 0) return "<p>None specified</p>";
+      const items = col.answer.map((repo) =>
+        repo.repositoryId
+          ? `<li><a href="${repo.repositoryId}" target="_blank">${repo.repositoryName ?? repo.repositoryId}</a></li>`
+          : `<li>${repo.repositoryName}</li>`
+      );
+      return `<ul>${items.join("")}</ul>`;
+    }
+
+    case "metadataStandardSearch": {
+      if (!Array.isArray(col.answer) || col.answer.length === 0) return "<p>None specified</p>";
+      const items = col.answer.map((std) =>
+        std.metadataStandardId
+          ? `<li><a href="${std.metadataStandardId}" target="_blank">${std.metadataStandardName ?? std.metadataStandardId}</a></li>`
+          : `<li>${std.metadataStandardName}</li>`
+      );
+      return `<ul>${items.join("")}</ul>`;
+    }
+
+    case "licenseSearch": {
+      if (!Array.isArray(col.answer) || col.answer.length === 0) return "<p>None specified</p>";
+      const items = col.answer.map((lic) =>
+        lic.licenseId
+          ? `<li><a href="${lic.licenseId}" target="_blank">${lic.licenseName ?? lic.licenseId}</a></li>`
+          : `<li>${lic.licenseName}</li>`
+      );
+      return `<ul>${items.join("")}</ul>`;
+    }
+
+    case "selectBox":
+    case "radioButtons": {
+      if (!col.answer) return "<p>None specified</p>";
+      const options = DefaultResearchOutputAccessLevelColumn.content.options;
+      const match = options?.find((opt) => opt.value === col.answer);
+      return `<p>${match?.label ?? col.answer}</p>`;
+    }
+
+    default:
+      // Delegate all standard types (text, textArea, checkBoxes, boolean, etc.) to the existing helper
+      return answerToHTML(col);
+  }
+}
 
 /**
  * Convert an answer to HTML based on its type.
@@ -24,7 +76,7 @@ import {
  * @param json The answer JSON to convert to HTML.
  * @returns The HTML representation of the answer.
  */
-function answerToHTML (json: AnyAnswerType): string {
+function answerToHTML(json: AnyAnswerType): string {
   let out = "<p>Not yet answered.</p>";
   if (!json) return out;
 
@@ -129,6 +181,41 @@ function answerToHTML (json: AnyAnswerType): string {
         out = `<p><a href="mailto:${json.answer}">${json.answer}</a></p>`;
         break;
 
+      case "researchOutputTable": {
+        const roAnswer = json as TableAnswerType;
+        const cols = roAnswer.columnHeadings;
+        const rows = roAnswer.answer;
+
+        // Find the index of the Description column to exclude it from the PDF table, since PDFs have limited width
+        const excludedHeadings = ["Description"];
+        const excludedIndices = new Set(
+          cols.map((heading, i) => excludedHeadings.includes(heading) ? i : -1).filter(i => i !== -1)
+        );
+
+        const filteredCols = cols.filter((_, i) => !excludedIndices.has(i));
+
+        let table = "<table>";
+
+        if (filteredCols.length > 0) {
+          const ths = filteredCols.map((th) => `<th>${th}</th>`).join("");
+          table += `<thead><tr>${ths}</tr></thead>`;
+        }
+
+        table += "<tbody>";
+        table += rows.map((row) => {
+          const tds = row.columns
+            .filter((_, i) => !excludedIndices.has(i))
+            .map((col) => `<td>${researchOutputColumnToHTML(col as AnyAnswerType)}</td>`)
+            .join("");
+          return `<tr>${tds}</tr>`;
+        }).join("");
+        table += "</tbody></table>";
+
+        out = table;
+        break;
+      }
+
+
       default:
         // A text type field, so wrap it in a paragraph
         out = `<p>${json.answer}</p>`;
@@ -200,7 +287,7 @@ Handlebars.registerHelper(
       const idForDisplay = id?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
       return `- <strong>ORCID:</strong> <a href="${id?.identifier}" target="_blank">${idForDisplay}</a>`
     }
- }
+  }
 );
 
 /**
@@ -208,11 +295,11 @@ Handlebars.registerHelper(
  */
 Handlebars.registerHelper(
   "contributorsForRole",
-  function(role: string, contributors: DMPToolDMPType["dmp"]["contributor"]): string {
+  function (role: string, contributors: DMPToolDMPType["dmp"]["contributor"]): string {
     if (!Array.isArray(contributors) || contributors.length < 1) return "";
     const out: string[] = contributors.filter((contributor) => contributor.role.includes(role))
       .map((contributor) => {
-          return contributor?.contributor_id?.identifier ? `<a href="${contributor.contributor_id.identifier}" target="_blank">${contributor.name}</a>` : contributor.name;
+        return contributor?.contributor_id?.identifier ? `<a href="${contributor.contributor_id.identifier}" target="_blank">${contributor.name}</a>` : contributor.name;
       });
     return out.length === 0 ? "None specified" : out.join("; ");
   }
@@ -223,14 +310,14 @@ Handlebars.registerHelper(
  */
 Handlebars.registerHelper(
   "relatedWorksByType",
-  function(works: DMPToolDMPType["dmp"]["related_identifier"]): string {
+  function (works: DMPToolDMPType["dmp"]["related_identifier"]): string {
     if (!Array.isArray(works) || works.length < 1) return "";
 
     const workTypes: string[] = works.map((work) => work.type).flat();
 
     const out: string[] = [];
     // Loop through each unique work type and collect all the citations
-    for(const workType of [...new Set(workTypes)]) {
+    for (const workType of [...new Set(workTypes)]) {
       const worksForType = relatedWorksForType(workType, works);
 
       if (worksForType) {
@@ -246,7 +333,7 @@ Handlebars.registerHelper(
  */
 Handlebars.registerHelper(
   "affiliationForDisplay",
-  function(affiliation: DMPToolDMPType["dmp"]["contact"]["affiliation"]): string {
+  function (affiliation: DMPToolDMPType["dmp"]["contact"]["affiliation"]): string {
     if (!Array.isArray(affiliation) || affiliation.length < 1) return "";
     return affiliation[0]?.affiliation_id?.identifier ? `<a href="${affiliation[0].affiliation_id.identifier}" target="_blank">${affiliation[0].name}</a>` : affiliation[0]?.name;
   }
@@ -255,7 +342,7 @@ Handlebars.registerHelper(
 /**
  * Generate the copyright notice for display based on the privacy setting.
  */
-Handlebars.registerHelper("copyrightForDisplay", function(visibility: string): string {
+Handlebars.registerHelper("copyrightForDisplay", function (visibility: string): string {
   if (visibility?.toLowerCase()?.trim() === "public") {
     return `
       The above plan creator(s) have agreed that others may use as much of the text of this
@@ -280,7 +367,7 @@ Handlebars.registerHelper("copyrightForDisplay", function(visibility: string): s
  */
 Handlebars.registerHelper(
   "fundersForDisplay",
-  function(project: DMPToolDMPType["dmp"]["project"][]): string {
+  function (project: DMPToolDMPType["dmp"]["project"][]): string {
     if (!Array.isArray(project) || project.length < 1) return "";
     let funding = project.map((project) => project.funding).flat();
     funding = funding.filter((fund) => fund !== null && fund !== undefined);
@@ -295,7 +382,7 @@ Handlebars.registerHelper(
  */
 Handlebars.registerHelper(
   "displayProjectAbstract",
-  function(project: DMPToolDMPType["dmp"]["project"][]): string {
+  function (project: DMPToolDMPType["dmp"]["project"][]): string {
     if (!Array.isArray(project) || project.length < 1) return "";
     return project[0]?.description;
   }
@@ -306,7 +393,7 @@ Handlebars.registerHelper(
  */
 Handlebars.registerHelper(
   "displayProjectStartDate",
-  function(project: DMPToolDMPType["dmp"]["project"][]): string {
+  function (project: DMPToolDMPType["dmp"]["project"][]): string {
     if (!Array.isArray(project) || project.length < 1) return "";
     const dates: string[] = project.map((project) => formatDate(project.start, false)).flat();
     return dates.length === 0 ? "None specified" : dates.sort()[0];
@@ -461,6 +548,10 @@ export function renderHTML(
         .annotations {
           margin-left: 15px;
           margin-bottom: 10px;
+        }
+        ul {
+          margin-left: 20px;
+          padding:0
         }
       </style>
     </head>

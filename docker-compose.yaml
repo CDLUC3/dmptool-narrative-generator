@@ -4,7 +4,7 @@
 # It is intended to run the Apollo server in an "offline" mode. All data will be mocked.
 #
 networks:
-  dmsp_backend_prototype_dmptool-network:
+  dmptool-apollo-server_dmptool-network:
     external: true
 
 services:
@@ -16,7 +16,7 @@ services:
     ports:
       - "4030:4030"
     networks:
-      - dmsp_backend_prototype_dmptool-network
+      - dmptool-apollo-server_dmptool-network
     expose:
       - 4030
     env_file:
