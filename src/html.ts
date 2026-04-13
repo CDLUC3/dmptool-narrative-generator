@@ -194,7 +194,19 @@ function answerToHTML(json: AnyAnswerType): string {
 
         const filteredCols = cols.filter((_, i) => !excludedIndices.has(i));
 
-        let table = "<table>";
+        // For each row, pull the description column and render it as a summary above the table, 
+        // then exclude it from the table itself
+        const stripPTagsFromHeader = (html: string) => html.replace(/^<p>|<\/p>$/g, "");
+        const rowSummaries = rows.map((row) => {
+          const col0 = stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[0] as AnyAnswerType));
+          const col1 = researchOutputColumnToHTML(row.columns[1] as AnyAnswerType);
+          const col2 = stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[2] as AnyAnswerType))
+            .replace(/[-_]/g, " ") // Replace hyphens and underscores with spaces
+            .replace(/\b\w/g, (c) => c.toUpperCase()); // Capitalize the first letter of each word to make it title case
+          return `<h4>${col2} - "${col0}"</h4>${col1}`;
+        }).join("");
+
+        let table = `${rowSummaries}<table>`;
 
         if (filteredCols.length > 0) {
           const ths = filteredCols.map((th) => `<th>${th}</th>`).join("");
@@ -204,6 +216,7 @@ function answerToHTML(json: AnyAnswerType): string {
         table += "<tbody>";
         table += rows.map((row) => {
           const tds = row.columns
+            .slice(0, cols.length)
             .filter((_, i) => !excludedIndices.has(i))
             .map((col) => `<td>${researchOutputColumnToHTML(col as AnyAnswerType)}</td>`)
             .join("");
@@ -513,6 +526,11 @@ export function renderHTML(
         h3 {
           font-size: 1.2em;
         }
+        h4 {
+          font-size: 1rem;
+          margin-left: 15px;
+          margin-bottom: 10px;
+        }
         div.cover-page p {
           margin-left: 10px;
           margin-bottom: 35px;
@@ -544,6 +562,10 @@ export function renderHTML(
         th, td {
           border: 1px solid black !important;
           padding: 2px;
+        }
+        td:first-child, th:first-child {
+          max-width: 300px;
+          word-wrap: break-word;
         }
         .annotations {
           margin-left: 15px;
