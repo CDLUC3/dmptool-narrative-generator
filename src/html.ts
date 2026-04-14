@@ -197,13 +197,19 @@ function answerToHTML(json: AnyAnswerType): string {
         // For each row, pull the description column and render it as a summary above the table, 
         // then exclude it from the table itself
         const stripPTagsFromHeader = (html: string) => html.replace(/^<p>|<\/p>$/g, "");
+        // Find the indices of the Title, Description, and Output Type columns for use in the row summaries
+        const titleIdx = cols.indexOf("Title");
+        const descriptionIdx = cols.indexOf("Description");
+        const outputTypeIdx = cols.indexOf("Output Type");
         const rowSummaries = rows.map((row) => {
-          const col0 = stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[0] as AnyAnswerType));
-          const col1 = researchOutputColumnToHTML(row.columns[1] as AnyAnswerType);
-          const col2 = stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[2] as AnyAnswerType))
-            .replace(/[-_]/g, " ") // Replace hyphens and underscores with spaces
-            .replace(/\b\w/g, (c) => c.toUpperCase()); // Capitalize the first letter of each word to make it title case
-          return `<h4>${col2} - "${col0}"</h4>${col1}`;
+          const title = titleIdx >= 0 ? stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[titleIdx] as AnyAnswerType)) : "";
+          const description = descriptionIdx >= 0 ? researchOutputColumnToHTML(row.columns[descriptionIdx] as AnyAnswerType) : "";
+          const outputType = outputTypeIdx >= 0
+            ? stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[outputTypeIdx] as AnyAnswerType))
+              .replace(/[-_]/g, " ") // Replace hyphens and underscores with spaces
+              .replace(/\b\w/g, (c) => c.toUpperCase()) // Capitalize the first letter of each word to make it title case
+            : "";
+          return `<h4>${outputType} - "${title}"</h4>${description}`;
         }).join("");
 
         let table = `${rowSummaries}<table>`;
