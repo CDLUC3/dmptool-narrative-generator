@@ -241,6 +241,12 @@ function answerToHTML(json: AnyAnswerType): string {
         break;
     }
   }
+
+  // Append comment if present
+  if (json.comment) {
+    out += `<div class="answer-comment"><strong>Comment:</strong> ${json.comment}</div>`;
+  }
+
   return out;
 }
 
