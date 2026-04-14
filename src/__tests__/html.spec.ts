@@ -346,9 +346,9 @@ describe("renderHtmlTemplate", () => {
                   columnHeadings: ["Title", "Description", "Output Type"],
                   answer: [{
                     columns: [
-                      { type: "text", answer: "My Software", meta: { schemaVersion: "1.0" } },
+                      { type: "text", answer: "Fatty acids from juvenile salmon", meta: { schemaVersion: "1.0" } },
                       { type: "textArea", answer: "<p>Some description</p>", meta: { schemaVersion: "1.0" } },
-                      { type: "selectBox", answer: "software_tool", meta: { schemaVersion: "1.0" } },
+                      { type: "selectBox", answer: "my_output_type", meta: { schemaVersion: "1.0" } },
                     ],
                   }],
                   meta: { schemaVersion: "1.0" },
@@ -361,8 +361,8 @@ describe("renderHtmlTemplate", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
-    // "software_tool" → replace underscores → "software tool" → title case → "Software Tool"
-    expect(html).toContain('<h4>Software Tool - "My Software"</h4>');
+    // "my_output_type" → replace underscores → "my output type" → title case → "My Output Type"
+    expect(html).toContain('<h4>My Output Type - "Fatty acids from juvenile salmon"</h4>');
   });
 
   it("should use empty strings in researchOutputTable row summary when Title or Output Type headings are absent", () => {
