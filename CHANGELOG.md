@@ -10,6 +10,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated the `html` rendering for `researchOutputTable` type answers by rendering all the descriptions above the table [#184]
 - Updated `puppeteer` and `turbodocx/html-to-docx` dependencies
 - Updated renovate config to rebase when behind the base branch
 - Fixed an issue with a check to determine if the maDMP is missing or just outdated
