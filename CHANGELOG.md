@@ -10,6 +10,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `html.ts`'s `answerToHTML` function to include additional comments in the download. Also, added additional comments text to `csv.ts` [#164]
 - Updated the `html` rendering for `researchOutputTable` type answers by rendering all the descriptions above the table [#184]
 - Updated `puppeteer` and `turbodocx/html-to-docx` dependencies
 - Updated renovate config to rebase when behind the base branch
