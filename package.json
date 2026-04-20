@@ -22,8 +22,8 @@
     "trivy-med": "./src/scripts/trivy-med.sh"
   },
   "overrides": {
-    "axios": "1.15.0",
-    "fast-xml-parser": "5.5.7"
+    "fast-xml-parser": "5.5.7",
+    "follow-redirects": "1.16.0"
   },
   "dependencies": {
     "@dmptool/types": "^3.1.3",
