@@ -267,4 +267,138 @@ describe("renderHtmlTemplate", () => {
     expect(html).toContain("Empty Test");
     expect(html).not.toContain("Not answered"); // no questions
   });
+
+  const roBaseData = {
+    title: "Test Plan",
+    dmp_id: { identifier: "id", type: "other" },
+    contact: {
+      name: "Alice",
+      contact_id: { identifier: "id", type: "other" },
+      affiliation: [{ affiliation_id: { identifier: "id", type: "other" }, name: "Org" }],
+    },
+    contributor: [],
+    project: [],
+    description: "desc",
+    modified: "2024-01-01",
+  };
+
+  it("should render researchOutputTable row summaries using Title, Description, and Output Type column headings", () => {
+    const html = renderHTML(display, margin, font, {
+      ...roBaseData,
+      narrative: {
+        template: {
+          title: "T",
+          section: [{
+            title: "Research Outputs",
+            description: "",
+            order: 1,
+            question: [{
+              text: "Research outputs",
+              order: 1,
+              answer: {
+                json: {
+                  type: "researchOutputTable",
+                  columnHeadings: ["Title", "Description", "Output Type"],
+                  answer: [{
+                    columns: [
+                      { type: "text", answer: "My Dataset", meta: { schemaVersion: "1.0" } },
+                      { type: "textArea", answer: "<p>A description of the dataset</p>", meta: { schemaVersion: "1.0" } },
+                      { type: "selectBox", answer: "dataset", meta: { schemaVersion: "1.0" } },
+                    ],
+                  }],
+                  meta: { schemaVersion: "1.0" },
+                }
+              }
+            }]
+          }]
+        }
+      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    // Row summary <h4> uses named column headings, with Output Type title-cased
+    expect(html).toContain('<h4>Dataset - "My Dataset"</h4>');
+    // Description content appears in the summary above the table
+    expect(html).toContain("A description of the dataset");
+    // Description is excluded from the table column headings
+    expect(html).not.toContain("<th>Description</th>");
+    // Title and Output Type remain as table column headings
+    expect(html).toContain("<th>Title</th>");
+    expect(html).toContain("<th>Output Type</th>");
+  });
+
+  it("should format the researchOutputTable Output Type with title case replacing hyphens and underscores", () => {
+    const html = renderHTML(display, margin, font, {
+      ...roBaseData,
+      narrative: {
+        template: {
+          title: "T",
+          section: [{
+            title: "Research Outputs",
+            description: "",
+            order: 1,
+            question: [{
+              text: "Research outputs",
+              order: 1,
+              answer: {
+                json: {
+                  type: "researchOutputTable",
+                  columnHeadings: ["Title", "Description", "Output Type"],
+                  answer: [{
+                    columns: [
+                      { type: "text", answer: "Fatty acids from juvenile salmon", meta: { schemaVersion: "1.0" } },
+                      { type: "textArea", answer: "<p>Some description</p>", meta: { schemaVersion: "1.0" } },
+                      { type: "selectBox", answer: "my_output_type", meta: { schemaVersion: "1.0" } },
+                    ],
+                  }],
+                  meta: { schemaVersion: "1.0" },
+                }
+              }
+            }]
+          }]
+        }
+      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    // "my_output_type" → replace underscores → "my output type" → title case → "My Output Type"
+    expect(html).toContain('<h4>My Output Type - "Fatty acids from juvenile salmon"</h4>');
+  });
+
+  it("should use empty strings in researchOutputTable row summary when Title or Output Type headings are absent", () => {
+    const html = renderHTML(display, margin, font, {
+      ...roBaseData,
+      narrative: {
+        template: {
+          title: "T",
+          section: [{
+            title: "Research Outputs",
+            description: "",
+            order: 1,
+            question: [{
+              text: "Research outputs",
+              order: 1,
+              answer: {
+                json: {
+                  type: "researchOutputTable",
+                  columnHeadings: ["Description"],
+                  answer: [{
+                    columns: [
+                      { type: "textArea", answer: "<p>Only description</p>", meta: { schemaVersion: "1.0" } },
+                    ],
+                  }],
+                  meta: { schemaVersion: "1.0" },
+                }
+              }
+            }]
+          }]
+        }
+      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    // No Title or Output Type headings → both default to empty string
+    expect(html).toContain('<h4> - ""</h4>');
+    expect(html).toContain("Only description");
+  });
 });

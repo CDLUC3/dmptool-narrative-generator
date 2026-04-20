@@ -12,6 +12,7 @@
   "baseBranches": [
     "development"
   ],
+  "rebaseWhen": "behind-base-branch",
   "ignorePaths": [
     ".github",
     ".husky",
