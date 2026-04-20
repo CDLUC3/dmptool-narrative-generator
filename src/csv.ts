@@ -11,7 +11,7 @@ import { stringify } from "csv-stringify/sync";
 import {DMPExtensionNarrative} from "@dmptool/utils";
 
 function answerToCSV (json: AnyAnswerType): string | number | boolean {
-  let answer: string | number | boolean;
+  let answer: string | number | boolean | undefined;
   // Special handling for certain answer types
   switch (json?.type as string) {
     case "textArea": {
@@ -48,7 +48,16 @@ function answerToCSV (json: AnyAnswerType): string | number | boolean {
       answer = json?.answer as string | number | boolean | undefined;
       break
   }
-  return answer ?? '';
+  // Normalize to string for CSV output
+  let finalAnswer = answer ?? '';
+
+  // 👇 Append comment if it exists
+  if (json?.comment) {
+    finalAnswer = `${finalAnswer} (Comment: ${json.comment})`;
+  }
+
+  return finalAnswer;
+
 }
 
 export function renderCSV(display: DisplayOptionsInterface, data: DMPToolDMPType["dmp"]): string {

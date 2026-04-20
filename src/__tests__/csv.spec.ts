@@ -1,3 +1,4 @@
+
 import { renderCSV } from "../csv";
 import {AnyAnswerType, TableAnswerType} from "@dmptool/types";
 import {DMPExtensionNarrative} from "@dmptool/utils";
@@ -26,8 +27,10 @@ describe("renderCsv + answerToCSV integration", () => {
         id: 123,
         title: "Section 1",
         order: 1,
+        type: "BASE",
         question: [{
           id: 123,
+          type: "BASE",
           text: "Q1",
           order: 1,
           answer: {
@@ -150,6 +153,19 @@ describe("renderCsv + answerToCSV integration", () => {
     const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     const expected = "{\"\"type\"\":\"\"text\"\",\"\"answer\"\":\"\"row1col2\"\"";
     expect(csv).toContain(expected);
+  });
+
+  it("appends comment to answer", () => {
+    const data: DMPExtensionNarrative = wrap({
+      type: "textArea",
+      answer: "Just the answer",
+      comment: "This is a comment",
+      meta: {
+        schemaVersion: "1.0.0",
+      }
+    });
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
+    expect(csv).toContain("Just the answer (Comment: This is a comment)");
   });
 });
 
