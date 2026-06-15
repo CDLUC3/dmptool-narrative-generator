@@ -53,7 +53,7 @@ describe("renderPdfWithPuppeteer", () => {
     const html = "<p>test content</p>";
     await renderPDF(html);
     expect(mockBrowser.newPage).toHaveBeenCalled();
-    expect(mockPage.setContent).toHaveBeenCalledWith(html, { waitUntil: "networkidle0" });
+    expect(mockPage.setContent).toHaveBeenCalledWith(html, { waitUntil: "domcontentloaded" });
   });
 
   it("calls page.pdf with correct options", async () => {

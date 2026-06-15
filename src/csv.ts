@@ -1,7 +1,7 @@
 import {
   AffiliationSearchAnswerType,
   AnyAnswerType,
-  DateRangeAnswerType, DMPToolDMPType,
+  DateRangeAnswerType, DefaultAnswer, DMPToolDMPType,
   NumberRangeAnswerType,
   TextAreaAnswerType
 } from "@dmptool/types";
@@ -81,7 +81,11 @@ export function renderCSV(display: DisplayOptionsInterface, data: DMPToolDMPType
     narrative?.section?.map((section) => {
       return section.question?.map((question) => {
         const row = [];
-        const answer = answerToCSV(question.answer?.json);
+        let answerJSON: AnyAnswerType | undefined = question.answer?.json;
+        if (!answerJSON) {
+          answerJSON = DefaultAnswer[question.type as string];
+        }
+        const answer = answerToCSV(answerJSON);
 
         if (display.includeSectionHeadings) {
           row.push(section.title);

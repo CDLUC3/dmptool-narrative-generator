@@ -1,6 +1,7 @@
 # dmptool-narrative-generator
 
 ## Added
+- Added overrides for `axios`, `brace-expansion`, `form-data`, `js-yaml` and `qs`  
 - Added override for `follow-redirects` dependency
 - Added override for `axios` dependency
 - Added override for `fast-xml-parser` and `flatted` dependencies
@@ -11,6 +12,8 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated override for `fast-xml-parser`
+- Updated `@dmptool/types` and `@dmptool/utils` dependencies
 - Updated `@dmptool/types` dependency
 - Updated `puppeteer` dependency
 - Updated `html.ts`'s `answerToHTML` function to include additional comments in the download. Also, added additional comments text to `csv.ts` [#164]
@@ -31,6 +34,7 @@
 - Updated the `glob` and `js-yaml` dependencies
 
 ## Deleted
+- Removed old override for `follow-redirects`
 - Removed override for `axios`
 - Removed overrides for `picomatch`, `brace-expansion`, `flatted`, `lodash` and `path-to-regexp`
 - Removed override for `minimatch` dependency

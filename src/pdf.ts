@@ -11,7 +11,7 @@ export async function renderPDF(html: string): Promise<Buffer> {
 
   try {
     const page: Page = await browser.newPage();
-    await page.setContent(html, {waitUntil: "networkidle0"});
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
 
     const pdf: Uint8Array = await page.pdf({
       format: "Letter",
