@@ -14,7 +14,6 @@
 ## Updated
 - Updated override for `fast-xml-parser`
 - Updated `@dmptool/types` and `@dmptool/utils` dependencies
-- Updated `@dmptool/types` dependency
 - Updated `puppeteer` dependency
 - Updated `html.ts`'s `answerToHTML` function to include additional comments in the download. Also, added additional comments text to `csv.ts` [#164]
 - Updated the `html` rendering for `researchOutputTable` type answers by rendering all the descriptions above the table [#184]
