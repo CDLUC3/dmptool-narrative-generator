@@ -3,7 +3,7 @@
   "description": "Service that accepts a DMP as JSON and renders a narrative document",
   "author": "University of California Curation Center (UC3)<dmptool@ucop.edu>",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "server.js",
   "repository": {
     "type": "git",
@@ -62,7 +62,7 @@
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.0",
     "typescript-eslint": "^8.61.0"
   }
 }
