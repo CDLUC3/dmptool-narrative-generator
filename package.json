@@ -30,8 +30,8 @@
     "qs": "6.15.2"
   },
   "dependencies": {
-    "@dmptool/types": "file:./dmptool-types-4.0.0.tgz",
-    "@dmptool/utils": "^2.1.4",
+    "@dmptool/types": "^4.0.0",
+    "@dmptool/utils": "^2.1.6",
     "@elastic/ecs-pino-format": "^1.5.0",
     "@turbodocx/html-to-docx": "^1.22.0",
     "cookie-parser": "^1.4.7",
