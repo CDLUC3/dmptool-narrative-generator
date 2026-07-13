@@ -301,9 +301,9 @@ describe("renderHtmlTemplate", () => {
                   columnHeadings: ["Title", "Description", "Output Type"],
                   answer: [{
                     columns: [
-                      { type: "text", answer: "My Dataset", meta: { schemaVersion: "1.0" } },
-                      { type: "textArea", answer: "<p>A description of the dataset</p>", meta: { schemaVersion: "1.0" } },
-                      { type: "selectBox", answer: "dataset", meta: { schemaVersion: "1.0" } },
+                      { type: "text", answer: "My Dataset", meta: { schemaVersion: "1.0" }, commonStandardId: 'title' },
+                      { type: "textArea", answer: "<p>A description of the dataset</p>", meta: { schemaVersion: "1.0" }, commonStandardId: 'description' },
+                      { type: "selectBox", answer: "dataset", meta: { schemaVersion: "1.0" }, commonStandardId: 'type' },
                     ],
                   }],
                   meta: { schemaVersion: "1.0" },
@@ -346,9 +346,9 @@ describe("renderHtmlTemplate", () => {
                   columnHeadings: ["Title", "Description", "Output Type"],
                   answer: [{
                     columns: [
-                      { type: "text", answer: "Fatty acids from juvenile salmon", meta: { schemaVersion: "1.0" } },
-                      { type: "textArea", answer: "<p>Some description</p>", meta: { schemaVersion: "1.0" } },
-                      { type: "selectBox", answer: "my_output_type", meta: { schemaVersion: "1.0" } },
+                      { type: "text", answer: "Fatty acids from juvenile salmon", meta: { schemaVersion: "1.0" }, commonStandardId: 'title' },
+                      { type: "textArea", answer: "<p>Some description</p>", meta: { schemaVersion: "1.0" }, commonStandardId: 'description' },
+                      { type: "selectBox", answer: "my_output_type", meta: { schemaVersion: "1.0" }, commonStandardId: 'type' },
                     ],
                   }],
                   meta: { schemaVersion: "1.0" },
@@ -384,7 +384,7 @@ describe("renderHtmlTemplate", () => {
                   columnHeadings: ["Description"],
                   answer: [{
                     columns: [
-                      { type: "textArea", answer: "<p>Only description</p>", meta: { schemaVersion: "1.0" } },
+                      { type: "textArea", answer: "<p>Only description</p>", meta: { schemaVersion: "1.0" }, commonStandardId: 'description' },
                     ],
                   }],
                   meta: { schemaVersion: "1.0" },

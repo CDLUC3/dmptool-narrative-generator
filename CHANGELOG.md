@@ -12,6 +12,9 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `csv.ts` to display `researchOutputTable` answers in a more readable format
+- Updated `html.ts` and `csv.ts` to work with new `commonStandardId` property
+- Updated `@dmptool/types` to v4.0.0
 - Updated override for `fast-xml-parser`
 - Updated `@dmptool/types` and `@dmptool/utils` dependencies
 - Updated `puppeteer` dependency
