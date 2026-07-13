@@ -134,6 +134,8 @@ export function hasPermissionToDownloadNarrative(
 
   // Admins can always access DMP narratives for DMPs that belong to their affiliation
   return (token?.role === "ADMIN" && affiliations.includes(token?.affiliationId))
+    // The DMP contact (plan owner/creator) can always download their own narrative
+    || token.email === data?.dmp.contact?.mbox
     // Researchers can access the narrative if the DMP is one associated with their token
     || userDMPs?.some(d => d.dmpId === data?.dmp.dmp_id?.identifier);
 }
@@ -256,7 +258,7 @@ async function persistMaDMPRecord(
       false // We don't need the extensions returned
     );
 
-  // Otherwise, we need to create the initial maDMP record for the plan
+    // Otherwise, we need to create the initial maDMP record for the plan
   } else {
     await createDMP(
       dynamoConfig,

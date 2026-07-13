@@ -32,6 +32,8 @@
 - Updated `dotenv`, `mysql2`, `@eslint/js`, `fast-check` and `puppeteer` dependencies
 - Updated the `glob` and `js-yaml` dependencies
 
+## Fixed
+- Fixed `hasPermissionToDownloadNarrative` to allow users to download their own plan even if its not yet published
 ## Deleted
 - Removed old override for `follow-redirects`
 - Removed override for `axios`
