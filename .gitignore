@@ -17,6 +17,9 @@ node_modules/
 # Skip test files
 tmp/*.*
 
+# Ignore tarballs of local packages
+*.tgz
+
 # Ignore the built service
 dist/
 

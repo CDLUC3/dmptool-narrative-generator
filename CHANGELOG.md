@@ -1,6 +1,7 @@
 # dmptool-narrative-generator
 
 ## Added
+- Added overrides for `axios`, `brace-expansion`, `form-data`, `js-yaml` and `qs`  
 - Added override for `follow-redirects` dependency
 - Added override for `axios` dependency
 - Added override for `fast-xml-parser` and `flatted` dependencies
@@ -11,7 +12,11 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
-- Updated `@dmptool/types` dependency
+- Updated `csv.ts` to display `researchOutputTable` answers in a more readable format
+- Updated `html.ts` and `csv.ts` to work with new `commonStandardId` property
+- Updated `@dmptool/types` to v4.0.0
+- Updated override for `fast-xml-parser`
+- Updated `@dmptool/types` and `@dmptool/utils` dependencies
 - Updated `puppeteer` dependency
 - Updated `html.ts`'s `answerToHTML` function to include additional comments in the download. Also, added additional comments text to `csv.ts` [#164]
 - Updated the `html` rendering for `researchOutputTable` type answers by rendering all the descriptions above the table [#184]
@@ -30,7 +35,10 @@
 - Updated `dotenv`, `mysql2`, `@eslint/js`, `fast-check` and `puppeteer` dependencies
 - Updated the `glob` and `js-yaml` dependencies
 
+## Fixed
+- Fixed `hasPermissionToDownloadNarrative` to allow users to download their own plan even if its not yet published
 ## Deleted
+- Removed old override for `follow-redirects`
 - Removed override for `axios`
 - Removed overrides for `picomatch`, `brace-expansion`, `flatted`, `lodash` and `path-to-regexp`
 - Removed override for `minimatch` dependency
