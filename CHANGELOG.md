@@ -1,6 +1,7 @@
 # dmptool-narrative-generator
 
 ## Added
+- Added `version` to `loadMaDMPFromDynamo` so that we can load the versioned plan to JSON. Fixed issue with the detected `ext` value for `app.get("/dmps/{*splat}/narrative{.:ext}"`. Also, fixed some security vulnerabilties for `brace-expansion`, `js-yaml` and `puppeteer` [#342]
 - Added overrides for `axios`, `brace-expansion`, `form-data`, `js-yaml` and `qs`  
 - Added override for `follow-redirects` dependency
 - Added override for `axios` dependency

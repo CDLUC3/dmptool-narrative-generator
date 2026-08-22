@@ -1,7 +1,13 @@
 import { renderPDF } from "../pdf";
 import puppeteer, { Browser, Page } from "puppeteer";
 
-jest.mock("puppeteer");
+jest.mock("puppeteer", () => ({
+  __esModule: true,
+  default: {
+    launch: jest.fn(),
+  },
+}));
+
 
 describe("renderPdfWithPuppeteer", () => {
   let mockBrowser: jest.Mocked<Browser>;
