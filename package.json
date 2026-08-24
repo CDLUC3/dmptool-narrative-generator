@@ -3,7 +3,7 @@
   "description": "Service that accepts a DMP as JSON and renders a narrative document",
   "author": "University of California Curation Center (UC3)<dmptool@ucop.edu>",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "server.js",
   "repository": {
     "type": "git",
@@ -36,7 +36,7 @@
     "@turbodocx/html-to-docx": "^1.22.0",
     "cookie-parser": "^1.4.7",
     "csv-stringify": "^6.8.0",
-    "domelementtype": "^2.3.0",
+    "domelementtype": "^3.0.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-jwt": "^8.5.1",
