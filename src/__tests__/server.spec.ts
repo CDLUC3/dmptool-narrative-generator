@@ -24,6 +24,13 @@ import * as txt from '../txt';
 import { NextFunction } from "express";
 import { PlanInterface, UserPlanInterface } from "../dataAccess";
 
+jest.mock('puppeteer', () => ({
+  __esModule: true,
+  default: {
+    launch: jest.fn(),
+  },
+}));
+
 // Mock all imported modules
 jest.mock('dotenv');
 jest.mock('../csv');

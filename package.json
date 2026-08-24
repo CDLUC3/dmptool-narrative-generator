@@ -23,10 +23,10 @@
   },
   "overrides": {
     "axios": "1.18.0",
-    "brace-expansion": "5.0.6",
+    "brace-expansion": "5.0.9",
     "fast-xml-parser": "5.9.0",
     "form-data": "4.0.6",
-    "js-yaml": "4.2.0",
+    "js-yaml": "4.3.1",
     "qs": "6.15.2"
   },
   "dependencies": {
@@ -46,7 +46,7 @@
     "mysql2": "^3.22.5",
     "pino": "^10.3.1",
     "pluralize": "^8.0.0",
-    "puppeteer": "^24.43.1"
+    "puppeteer": "^25.8.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

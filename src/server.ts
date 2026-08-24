@@ -162,8 +162,11 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   // the specified file extension OR the Accept header
   let accept: string;
 
-  if (req.params.ext && req.params.ext.length > 0) {
-    switch (req.params.ext[0].toLowerCase()) {
+  // Handle both string and array cases for req.params.ext
+  const extValue = Array.isArray(req.params.ext) ? req.params.ext[0] : req.params.ext;
+
+    if (extValue && extValue.length > 0) {
+      switch (extValue.toLowerCase()) {
       case "csv": accept = CSV_TYPE; break;
       case "docx": accept = DOCX_TYPE; break;
       case "json": accept = JSON_TYPE; break;
@@ -230,7 +233,7 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
     );
 
     // Fetch the latest maDMP record for the Plan from the DynamoDB table
-    let maDMP: DMPToolDMPType = await loadMaDMPFromDynamo(requestLogger, domainName, fullDMPId);
+    let maDMP: DMPToolDMPType = await loadMaDMPFromDynamo(requestLogger, domainName, fullDMPId, version);
     requestLogger.debug(
       { dmpId, maDMPModified: maDMP?.dmp?.modified, jti: token?.jti },
       'Retrieved maDMP metadata from DynamoDB'

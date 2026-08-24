@@ -211,7 +211,8 @@ export async function loadPlan(
 export async function loadMaDMPFromDynamo(
   logger: Logger,
   domainName: string,
-  dmpId: string
+  dmpId: string,
+  version: string = DMP_LATEST_VERSION
 ): Promise<DMPToolDMPType | undefined> {
   const dynamoConfig: DynamoConnectionParams = getDynamoConfig(logger);
 
@@ -221,7 +222,7 @@ export async function loadMaDMPFromDynamo(
     dynamoConfig,
     domainName,
     dmpId,
-    DMP_LATEST_VERSION,
+    version,
     true
   );
   const hasNarrative = Array.isArray(data) && data[0]?.dmp?.narrative !== undefined;
