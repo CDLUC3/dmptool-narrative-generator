@@ -1,7 +1,7 @@
-
-import { renderCSV } from "../csv";
-import {AnyAnswerType, TableAnswerType} from "@dmptool/types";
-import {DMPExtensionNarrative} from "@dmptool/utils";
+import { describe, it, expect } from "@jest/globals";
+import { renderCSV } from "../csv.js";
+import type { AnyAnswerType, TableAnswerType } from "@dmptool/types";
+import type { DMPExtensionNarrative } from "@dmptool/utils";
 
 const defaultDisplayOptions = {
   includeCoverPage: true,
@@ -117,7 +117,7 @@ describe("renderCsv + answerToCSV integration", () => {
   it("handles affiliationSearch without id", () => {
     const data: DMPExtensionNarrative = wrap({
       type: "affiliationSearch",
-      answer: { affiliationName: "Uni", affiliationId: null },
+      answer: { affiliationName: "Uni", affiliationId: "" },
       meta: {
         schemaVersion: "1.0.0",
       }

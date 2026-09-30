@@ -1,19 +1,19 @@
 import {
-  ConnectionParams,
+  type ConnectionParams,
   createDMP,
   DMP_LATEST_VERSION,
-  DynamoConnectionParams,
+  type DynamoConnectionParams,
   EnvironmentEnum,
   getDMPs,
   getSSMParameter,
   planToDMPCommonStandard,
   queryTable,
-  SsmConnectionParams,
+  type SsmConnectionParams,
   updateDMP
 } from "@dmptool/utils";
-import { JWTAccessToken } from "./helper";
-import { Logger } from "pino";
-import { DMPToolDMPType } from "@dmptool/types";
+import type { JWTAccessToken } from "./helper.js";
+import type { Logger } from "pino";
+import type { DMPToolDMPType } from "@dmptool/types";
 
 /**
  * A Plan the User has access to
@@ -64,7 +64,7 @@ const getDynamoConfig = (
   return {
     logger,
     region: process.env.AWS_REGION || 'us-west-2',
-    tableName: process.env.DYNAMODB_TABLE_NAME,
+    tableName: process.env.DYNAMODB_TABLE_NAME || 'dynamo-table',
     endpoint: process.env.DYNAMODB_ENDPOINT,
     maxAttempts: Number(process.env.MAX_ATTEMPTS) || 3
   };
@@ -95,7 +95,7 @@ const getRDSConfig = async (
 
   return {
     logger: ssmConfig.logger,
-    host: process.env.RDS_HOST,
+    host: process.env.RDS_HOST || 'localhost',
     port: Number(process.env.RDS_PORT) || 3306,
     user: rdsUser,
     password: rdsPassword,
@@ -125,11 +125,14 @@ export function hasPermissionToDownloadNarrative(
   // SuperAdmins can always access DMP narratives
   if (token?.role === "SUPERADMIN") return true;
 
+  // Collect the affiliation of the DMP contact
   const affiliations = [data.dmp.contact?.affiliation[0]?.affiliation_id?.identifier];
 
   // Now collect all the contributors
   if (Array.isArray(data.dmp.contributor)) {
-    affiliations.push(...data.dmp.contributor.map(c => c?.affiliation[0]?.affiliation_id?.identifier));
+    affiliations.push(...data.dmp.contributor.map((c: DMPToolDMPType['dmp']['contributor'][0]) => {
+      return c?.affiliation[0]?.affiliation_id?.identifier;
+    }));
   }
 
   // Admins can always access DMP narratives for DMPs that belong to their affiliation
@@ -153,8 +156,16 @@ export async function loadPlansForUser(
   token: JWTAccessToken,
   env: EnvironmentEnum = EnvironmentEnum.DEV
 ): Promise<UserPlanInterface[]> {
-  const ssmConfig = await getSSMConfig(logger);
-  const rdsConfig: ConnectionParams = await getRDSConfig(ssmConfig, env);
+  const ssmConfig: SsmConnectionParams | undefined = await getSSMConfig(logger);
+  if (!ssmConfig) {
+    logger.fatal('Missing SSM configuration config!');
+    return [];
+  }
+  const rdsConfig: ConnectionParams | undefined = await getRDSConfig(ssmConfig, env);
+  if (!rdsConfig) {
+    logger.fatal('Missing RDS configuration config!');
+    return [];
+  }
 
   // Fetch the list of DMPs the user has access to
   const sql = `
@@ -187,8 +198,16 @@ export async function loadPlan(
   dmpId: string,
   env: EnvironmentEnum = EnvironmentEnum.DEV
 ): Promise<PlanInterface | undefined> {
-  const ssmConfig = await getSSMConfig(logger);
-  const rdsConfig: ConnectionParams = await getRDSConfig(ssmConfig, env);
+  const ssmConfig: SsmConnectionParams | undefined = await getSSMConfig(logger);
+  if (!ssmConfig) {
+    logger.fatal('Missing SSM configuration config!');
+    return undefined;
+  }
+  const rdsConfig: ConnectionParams | undefined = await getRDSConfig(ssmConfig, env);
+  if (!rdsConfig) {
+    logger.fatal('Missing RDS configuration config!');
+    return undefined;
+  }
 
   // Fetch the list of DMPs the user has access to
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,7 +233,11 @@ export async function loadMaDMPFromDynamo(
   dmpId: string,
   version: string = DMP_LATEST_VERSION
 ): Promise<DMPToolDMPType | undefined> {
-  const dynamoConfig: DynamoConnectionParams = getDynamoConfig(logger);
+  const dynamoConfig: DynamoConnectionParams | undefined = getDynamoConfig(logger);
+  if (!dynamoConfig) {
+    logger.fatal('Missing DynamoDB configuration config!');
+    return undefined;
+  }
 
   logger.debug(`Fetching maDMP record for ${dmpId} from DynamoDB`);
   // Fetch the Plan's latest maDMP JSON from the DynamoDB Table
@@ -246,7 +269,11 @@ async function persistMaDMPRecord(
   maDMP: DMPToolDMPType,
   wasJustOutdated = false
 ): Promise<void> {
-  const dynamoConfig: DynamoConnectionParams = getDynamoConfig(logger);
+  const dynamoConfig: DynamoConnectionParams | undefined = getDynamoConfig(logger);
+  if (!dynamoConfig) {
+    logger.fatal('Missing DynamoDB configuration config!');
+    return;
+  }
 
   // If the DynamoDB did have a maDMP record for the plan, then we need to update it
   if (wasJustOutdated) {
@@ -292,9 +319,17 @@ export async function handleMissingMaDMP(
   domainName: string,
   plan: PlanInterface,
   wasJustOutdated: boolean
-): Promise<DMPToolDMPType> {
-  const ssmConfig: SsmConnectionParams = await getSSMConfig(logger);
-  const rdsConfig: ConnectionParams = await getRDSConfig(ssmConfig, env);
+): Promise<DMPToolDMPType | undefined> {
+  const ssmConfig: SsmConnectionParams | undefined = await getSSMConfig(logger);
+  if (!ssmConfig) {
+    logger.fatal('Missing SSM configuration config!');
+    return undefined;
+  }
+  const rdsConfig: ConnectionParams | undefined = await getRDSConfig(ssmConfig, env);
+  if (!rdsConfig) {
+    logger.fatal('Missing RDS configuration config!');
+    return undefined;
+  }
 
   // Generate the maDMP record from the Plan's data
   const maDMP = await planToDMPCommonStandard(

@@ -1,13 +1,16 @@
-import { renderPDF } from "../pdf";
-import puppeteer, { Browser, Page } from "puppeteer";
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import type { Browser, Page } from "puppeteer";
 
-jest.mock("puppeteer", () => ({
-  __esModule: true,
+const mockLaunch = jest.fn();
+jest.unstable_mockModule("puppeteer", () => ({
   default: {
-    launch: jest.fn(),
+    launch: mockLaunch,
   },
+  launch: mockLaunch,
 }));
 
+const puppeteer = (await import("puppeteer")).default;
+const { renderPDF } = await import("../pdf.js");
 
 describe("renderPdfWithPuppeteer", () => {
   let mockBrowser: jest.Mocked<Browser>;
@@ -15,8 +18,8 @@ describe("renderPdfWithPuppeteer", () => {
 
   beforeEach(() => {
     mockPage = {
-      setContent: jest.fn().mockResolvedValue(undefined),
-      pdf: jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3])),
+      setContent: jest.fn().mockResolvedValue(undefined as never),
+      pdf: jest.fn().mockResolvedValue(new Uint8Array([1, 2, 3]) as never),
       goto: jest.fn(),
       evaluate: jest.fn(),
       close: jest.fn(),
@@ -32,14 +35,14 @@ describe("renderPdfWithPuppeteer", () => {
     } as any;
 
     mockBrowser = {
-      newPage: jest.fn().mockResolvedValue(mockPage),
-      close: jest.fn().mockResolvedValue(undefined),
-      pages: jest.fn().mockResolvedValue([mockPage]),
+      newPage: jest.fn().mockResolvedValue(mockPage as never),
+      close: jest.fn().mockResolvedValue(undefined as never),
+      pages: jest.fn().mockResolvedValue([mockPage] as never),
       wsEndpoint: jest.fn(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
-    (puppeteer.launch as jest.Mock).mockResolvedValue(mockBrowser);
+    (puppeteer.launch as jest.Mock).mockResolvedValue(mockBrowser as never);
   });
 
   afterEach(() => {

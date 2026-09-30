@@ -1,6 +1,7 @@
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import request from 'supertest';
-import { Logger } from 'pino';
-import { DMPToolDMPType } from '@dmptool/types';
+import type { Logger } from 'pino';
+import type { DMPToolDMPType } from '@dmptool/types';
 
 process.env.APPLICATION_NAME = 'test-app';
 process.env.DOMAIN_NAME = 'example.com';
@@ -13,23 +14,8 @@ process.env.LOG_LEVEL = 'debug';
 process.env.RDS_HOST = 'test-rds';
 process.env.SSM_ENDPOINT = 'test-ssm';
 
-import app from '../server';
-
-import * as dataAccess from '../dataAccess';
-import * as csv from '../csv';
-import * as html from '../html';
-import * as pdf from '../pdf';
-import * as docx from '../docx';
-import * as txt from '../txt';
-import { NextFunction } from "express";
-import { PlanInterface, UserPlanInterface } from "../dataAccess";
-
-jest.mock('puppeteer', () => ({
-  __esModule: true,
-  default: {
-    launch: jest.fn(),
-  },
-}));
+import type { NextFunction } from "express";
+import type { PlanInterface, UserPlanInterface } from "../dataAccess.js";
 
 // Mock all imported modules
 jest.mock('dotenv');
@@ -42,21 +28,87 @@ jest.mock('../helper');
 jest.mock('@dmptool/utils');
 jest.mock('../dataAccess');
 
-jest.mock('express-jwt', () => ({
-  expressjwt: jest.fn(() => (req: Request, res: Response, next: NextFunction) => {
-    // Simulate a decoded token for testing purposes if needed
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (req as any).auth = { id: 1, email: 'test@example.com' };
-    next();
-  })
+const mockLaunch = jest.fn();
+jest.unstable_mockModule("puppeteer", () => ({
+  default: {
+    launch: mockLaunch,
+  },
+  launch: mockLaunch,
 }));
 
-// Mock a few functions in @dmptool/utils but keep the rest of the function intact
-jest.mock("@dmptool/utils", () => ({
-  ...jest.requireActual("@dmptool/utils"),
-  initializeLogger: jest.fn(() => mockLogger),
-  convertMySQLDateTimeToRFC3339: jest.fn(() => '2024-01-01T00:00:00Z'),
+const mockExpressJWT = jest.fn(() => (req: Request, res: Response, next: NextFunction) => {
+  // Simulate a decoded token for testing purposes if needed
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (req as any).auth = { id: 1, email: 'test@example.com' };
+  next();
+});
+jest.unstable_mockModule('express-jwt', () => ({
+  expressjwt: mockExpressJWT,
 }));
+
+const mockRenderHTML = jest.fn();
+jest.unstable_mockModule('../html.js', () => ({
+  renderHTML: mockRenderHTML,
+}));
+const mockRenderPdf = jest.fn();
+jest.unstable_mockModule('../pdf.js', () => ({
+  renderPDF: mockRenderPdf,
+}));
+const mockRenderCSV = jest.fn();
+jest.unstable_mockModule('../csv.js', () => ({
+  renderCSV: mockRenderCSV,
+}));
+const mockRenderDOCX = jest.fn();
+jest.unstable_mockModule('../docx.js', () => ({
+  renderDOCX: mockRenderDOCX,
+}));
+const mockRenderTXT = jest.fn();
+jest.unstable_mockModule('../txt.js', () => ({
+  renderTXT: mockRenderTXT,
+}));
+
+const mockLoadDMPFromDynamo = jest.fn();
+const mockLoadPlan = jest.fn();
+const mockLoadPlansForUser = jest.fn();
+const mockHandleMissingMaDMP = jest.fn();
+const mockHasPermissionToDownloadNarrative = jest.fn();
+jest.unstable_mockModule('../dataAccess.js', () => ({
+  loadMaDMPFromDynamo: mockLoadDMPFromDynamo,
+  loadPlan: mockLoadPlan,
+  loadPlansForUser: mockLoadPlansForUser,
+  handleMissingMaDMP: mockHandleMissingMaDMP,
+  hasPermissionToDownloadNarrative: mockHasPermissionToDownloadNarrative,
+}));
+
+const mockInitializeLogger = jest.fn(() => mockLogger);
+const mockConvertMySQL = jest.fn();
+const mockToErrorMessage = jest.fn();
+jest.unstable_mockModule('@dmptool/utils', () => ({
+  initializeLogger: mockInitializeLogger,
+  convertMySQLDateTimeToRFC3339: mockConvertMySQL,
+  toErrorMessage: mockToErrorMessage,
+  EnvironmentEnum: {
+    DEV: "dev",
+    STAGE: "stage",
+    PROD: "prod"
+  },
+  LogLevelEnum: {
+    DEBUG: "debug",
+    INFO: "info",
+    WARN: "warn",
+    ERROR: "error",
+    FATAL: "fatal"
+  },
+  DMP_LATEST_VERSION: "latest"
+}));
+
+const html = await import('../html.js');
+const csv = await import('../csv.js');
+const pdf = await import('../pdf.js');
+const docx = await import('../docx.js');
+const txt = await import('../txt.js');
+const dataAccess= await import('../dataAccess.js');
+const app = (await import('../server.js')).default;
 
 const mockLogger = {
   debug: jest.fn(),
@@ -101,16 +153,16 @@ describe('Server', () => {
     ];
 
     // Setup default mocks
-    (dataAccess.loadPlan as jest.Mock).mockResolvedValue(mockPlan);
-    (dataAccess.loadPlansForUser as jest.Mock).mockResolvedValue(mockUserDMPs);
-    (dataAccess.loadMaDMPFromDynamo as jest.Mock).mockResolvedValue(mockMaDMP);
-    (dataAccess.hasPermissionToDownloadNarrative as jest.Mock).mockReturnValue(true);
-    (dataAccess.handleMissingMaDMP as jest.Mock).mockResolvedValue(mockMaDMP);
+    (dataAccess.loadPlan as jest.Mock).mockResolvedValue(mockPlan as never);
+    (dataAccess.loadPlansForUser as jest.Mock).mockResolvedValue(mockUserDMPs as never);
+    (dataAccess.loadMaDMPFromDynamo as jest.Mock).mockResolvedValue(mockMaDMP as never);
+    (dataAccess.hasPermissionToDownloadNarrative as jest.Mock).mockReturnValue(true as never);
+    (dataAccess.handleMissingMaDMP as jest.Mock).mockResolvedValue(mockMaDMP as never);
     (html.renderHTML as jest.Mock).mockReturnValue('<html>Test HTML</html>');
     (csv.renderCSV as jest.Mock).mockReturnValue('column1,column2\nvalue1,value2');
-    (pdf.renderPDF as jest.Mock).mockResolvedValue(Buffer.from('PDF content'));
-    (docx.renderDOCX as jest.Mock).mockResolvedValue(Buffer.from('DOCX content'));
-    (txt.renderTXT as jest.Mock).mockResolvedValue('Plain text content');
+    (pdf.renderPDF as jest.Mock).mockResolvedValue(Buffer.from('PDF content') as never);
+    (docx.renderDOCX as jest.Mock).mockResolvedValue(Buffer.from('DOCX content') as never);
+    (txt.renderTXT as jest.Mock).mockResolvedValue('Plain text content' as never);
   });
 
   describe('GET /dmps/{*splat}/narrative{.:ext}', () => {
@@ -263,7 +315,7 @@ describe('Server', () => {
     });
 
     it('should return 404 when DMP not found in user DMPs', async () => {
-      (dataAccess.loadPlan as jest.Mock).mockResolvedValue(undefined);
+      (dataAccess.loadPlan as jest.Mock).mockResolvedValue(undefined as never);
 
       const response = await request(app)
         .get('/dmps/11.11111/NOTFOUND/narrative')
@@ -274,8 +326,8 @@ describe('Server', () => {
     });
 
     it('should return 500 when maDMP cannot be generated', async () => {
-      (dataAccess.loadMaDMPFromDynamo as jest.Mock).mockResolvedValue(null);
-      (dataAccess.handleMissingMaDMP as jest.Mock).mockResolvedValue(null);
+      (dataAccess.loadMaDMPFromDynamo as jest.Mock).mockResolvedValue(null as never);
+      (dataAccess.handleMissingMaDMP as jest.Mock).mockResolvedValue(null as never);
 
       const response = await request(app)
         .get('/dmps/11.11111/A1B2C3/narrative')
@@ -297,8 +349,8 @@ describe('Server', () => {
     });
 
     it('should handle missing maDMP and regenerate', async () => {
-      (dataAccess.loadMaDMPFromDynamo as jest.Mock).mockResolvedValue(null);
-      (dataAccess.handleMissingMaDMP as jest.Mock).mockResolvedValue(mockMaDMP);
+      (dataAccess.loadMaDMPFromDynamo as jest.Mock).mockResolvedValue(null as never);
+      (dataAccess.handleMissingMaDMP as jest.Mock).mockResolvedValue(mockMaDMP as never);
 
       const response = await request(app)
         .get('/dmps/11.11111/A1B2C3/narrative')
@@ -317,8 +369,8 @@ describe('Server', () => {
           modified: '2023-01-01T00:00:00Z',
         },
       };
-      (dataAccess.loadMaDMPFromDynamo as jest.Mock).mockResolvedValue(outdatedMaDMP);
-      (dataAccess.handleMissingMaDMP as jest.Mock).mockResolvedValue(mockMaDMP);
+      (dataAccess.loadMaDMPFromDynamo as jest.Mock).mockResolvedValue(outdatedMaDMP as never);
+      (dataAccess.handleMissingMaDMP as jest.Mock).mockResolvedValue(mockMaDMP as never);
 
       const response = await request(app)
         .get('/dmps/11.11111/A1B2C3/narrative')
@@ -330,7 +382,7 @@ describe('Server', () => {
     });
 
     it('should return 500 when exception occurs', async () => {
-      (dataAccess.loadPlan as jest.Mock).mockRejectedValue(new Error('Database error'));
+      (dataAccess.loadPlan as jest.Mock).mockRejectedValue(new Error('Database error') as never);
 
       const response = await request(app)
         .get('/dmps/11.11111/A1B2C3/narrative')

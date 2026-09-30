@@ -1,4 +1,5 @@
-import { renderTXT } from "../txt";
+import { describe, expect, it } from "@jest/globals";
+import { renderTXT } from "../txt.js";
 
 describe("renderPlainText", () => {
   const bufToString = async (html: string) => {
