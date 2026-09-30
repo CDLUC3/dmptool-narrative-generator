@@ -1,4 +1,4 @@
-import { JwtPayload } from "jsonwebtoken";
+import type { JwtPayload } from "jsonwebtoken";
 
 /**
  * The JSON web token structure
@@ -106,5 +106,9 @@ export function getFontFamily(fontParam: string): string {
   // Will convert to lowercase, trim whitespace, and remove quotes
   const selectedFont = fontParam?.toLowerCase().trim().replace(/['"]/g, '') || 'tinos';
 
-  return availableFonts[selectedFont] || availableFonts['tinos'];
+  if (availableFonts[selectedFont as keyof typeof availableFonts]) {
+    return availableFonts[selectedFont as keyof typeof availableFonts];
+  } else {
+    return availableFonts['tinos'];
+  }
 }
