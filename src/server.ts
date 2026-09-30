@@ -15,7 +15,7 @@ import {
   pointsToFontSize,
   getFontFamily
 } from "./helper.js";
-import { expressjwt, type Request } from "express-jwt";
+import { type Request } from "express-jwt";
 import type { DMPToolDMPType } from "@dmptool/types";
 import {
   convertMySQLDateTimeToRFC3339,
@@ -33,6 +33,7 @@ import {
   type PlanInterface,
   type UserPlanInterface
 } from "./dataAccess.js";
+import { requireAuth } from "./auth.js";
 
 dotenv.config();
 
@@ -100,26 +101,6 @@ function prepareOptions(params: any): OptionsInterface {
   }
 }
 
-// ---------------- Middleware to fetch the JWT ----------------
-const auth = expressjwt({
-  algorithms: ['HS256'],
-  credentialsRequired: false,
-  secret: process.env.JWT_SECRET || "default-secret",
-
-  // Fetch the access token from the cookie
-  getToken: function fromCookie(req) {
-    if (req.cookies?.dmspt) {
-      return req.cookies?.dmspt?.toString();
-    }
-
-    const headerCookie = req.headers.cookie;
-    if (headerCookie) {
-      const parts = headerCookie.split('=');
-      return parts[0] === 'dmspt' ? parts[1] : undefined;
-    }
-  },
-});
-
 // ----------------- Process the incoming Accept types  -----------------
 function processAccept(accept: string): string[] {
   // The accept header may contain a lot of info and several types
@@ -133,7 +114,9 @@ const requiredEnvVars = [
   "APPLICATION_NAME",
   "DYNAMODB_TABLE_NAME",
   "EZID_BASE_URL",
-  "JWT_SECRET",
+  "TOKEN_ISSUER",
+  "TOKEN_AUDIENCES",
+  "ACCESS_TOKEN_NAME",
   "RDS_HOST"
 ];
 requiredEnvVars.forEach(envVar => {
@@ -151,7 +134,7 @@ app.use(cookieParser());
 // Matches patterns like:
 //   /dmps/11.11111/A1B2C3/narrative
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
-app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Response) => {
+app.get("/dmps/{*splat}/narrative{.:ext}", requireAuth, async (req: Request, res: Response) => {
   const rawLogLevel: string = process.env.LOG_LEVEL ? process.env.LOG_LEVEL.toUpperCase() : 'INFO';
   const rawEnv: string = process.env.ENV ? process.env.ENV.toUpperCase() : 'DEV';
   // Process the environment variables
@@ -161,14 +144,12 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   const applicationName = process.env.APPLICATION_NAME || "My app";
   const ezidBaseURL = process.env.EZID_BASE_URL || 'https://doi.org/';
 
-
   // Get the format the user wants the narrative document in from either
   // the specified file extension OR the Accept header
   let accept: string;
 
   // Handle both string and array cases for req.params.ext
   const extValue = Array.isArray(req.params.ext) ? req.params.ext[0] : req.params.ext;
-
     if (extValue && extValue.length > 0) {
       switch (extValue.toLowerCase()) {
       case "csv": accept = CSV_TYPE; break;

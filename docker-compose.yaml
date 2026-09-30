@@ -43,7 +43,15 @@ services:
 
       - "EZID_BASE_URL=https://doi.org"
 
+      - "TOKEN_ISSUER=http://auth:4646"
+
       # Using the Apollo server network's LocalStack endpoint
       - "SSM_ENDPOINT=http://localstack:4566"
     volumes:
       - ".:/app"
+      # Tells Docker NOT to overwrite node_modules. It just worked with ts-node-dev because that is written in 100% javascript. When our Mac's node_modules folder overwrote our Docker container's folder in the past,
+      # the Linux container didn't care. It could read and execute the pure JavaScript files from your Mac fine because Node.js translates JavaScript the same way on any operating system. tsx is built
+      # on top of a tool called esbuild, which is written in Go and compiled into raw, native machine code to make it ultra fast. A binary compiled
+      # for macOS (Darwin ARM64) is built out of specific instructions meant exclusively for Apple Silicon chips and Apple's kernel. A binary compiled for
+      # Linux (Linux ARM64) uses completyely different machine instructions mean for a Linux kernel.
+      - /app/node_modules

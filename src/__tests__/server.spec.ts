@@ -9,7 +9,9 @@ process.env.DYNAMODB_TABLE_NAME = 'test-table';
 process.env.DYNAMODB_ENDPOINT = 'test-endpoint';
 process.env.ENV = 'tst';
 process.env.EZID_BASE_URL = 'test-ezid';
-process.env.JWT_SECRET = 'test-secret';
+process.env.TOKEN_ISSUER = 'http://localhost:4646';
+process.env.TOKEN_AUDIENCES = 'my-\\[a-z]+';
+process.env.ACCESS_TOKEN_NAME = 'access_token';
 process.env.LOG_LEVEL = 'debug';
 process.env.RDS_HOST = 'test-rds';
 process.env.SSM_ENDPOINT = 'test-ssm';
@@ -27,6 +29,13 @@ jest.mock('../txt');
 jest.mock('../helper');
 jest.mock('@dmptool/utils');
 jest.mock('../dataAccess');
+
+const mockRequireAuth = jest.fn((_req: Request, _res: Response, next: NextFunction) => {
+  next();
+});
+jest.unstable_mockModule('../auth.js', () => ({
+  requireAuth: mockRequireAuth,
+}));
 
 const mockLaunch = jest.fn();
 jest.unstable_mockModule("puppeteer", () => ({

@@ -44,6 +44,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 # Install all deps
 COPY package*.json ./
 RUN npm ci
+COPY . .
 
 # Expose API port
 EXPOSE 4030
