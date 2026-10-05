@@ -1,4 +1,5 @@
-import { renderHTML } from "../html";
+import { describe, expect, it } from "@jest/globals";
+import { renderHTML } from "../html.js";
 
 describe("renderHtmlTemplate", () => {
   const display = {

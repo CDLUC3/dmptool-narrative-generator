@@ -1,26 +1,28 @@
 import * as dotenv from 'dotenv';
-import { Logger } from 'pino';
-import express, { Response } from "express";
-import { JWTAccessToken } from "./helper";
+import { fileURLToPath } from "node:url";
+import type { Logger } from 'pino';
+import express, { type Response } from "express";
+import type { JWTAccessToken } from "./helper.js";
 import cookieParser from "cookie-parser";
-import { renderCSV } from "./csv";
-import { renderHTML } from "./html";
-import { renderPDF } from "./pdf";
-import { renderDOCX } from "./docx";
-import { renderTXT } from "./txt";
+import { renderCSV } from "./csv.js";
+import { renderHTML } from "./html.js";
+import { renderPDF } from "./pdf.js";
+import { renderDOCX } from "./docx.js";
+import { renderTXT } from "./txt.js";
 import {
   safeNumber,
   safeBoolean,
   pointsToFontSize,
   getFontFamily
-} from "./helper";
-import { expressjwt, Request } from "express-jwt";
-import { DMPToolDMPType } from "@dmptool/types";
+} from "./helper.js";
+import { type Request } from "express-jwt";
+import type { DMPToolDMPType } from "@dmptool/types";
 import {
   convertMySQLDateTimeToRFC3339,
   EnvironmentEnum,
   initializeLogger,
   LogLevelEnum,
+  toErrorMessage,
 } from "@dmptool/utils";
 import {
   handleMissingMaDMP,
@@ -28,9 +30,10 @@ import {
   loadMaDMPFromDynamo,
   loadPlan,
   loadPlansForUser,
-  PlanInterface,
-  UserPlanInterface
-} from "./dataAccess";
+  type PlanInterface,
+  type UserPlanInterface
+} from "./dataAccess.js";
+import { requireAuth } from "./auth.js";
 
 dotenv.config();
 
@@ -77,12 +80,12 @@ function prepareOptions(params: any): OptionsInterface {
   return {
     version: params?.version,
     display: {
-      includeCoverPage: safeBoolean(params?.includeCoverPage as string, true),
-      includeSectionHeadings: safeBoolean(params?.includeSectionHeadings as string, true),
-      includeQuestionText: safeBoolean(params?.includeQuestionText as string, true),
-      includeUnansweredQuestions: safeBoolean(params?.includeUnansweredQuestions as string, true),
-      includeResearchOutputs: safeBoolean(params?.includeResearchOutputs as string, true),
-      includeRelatedWorks: safeBoolean(params?.includeRelatedWorks as string, true),
+      includeCoverPage: safeBoolean(params?.includeCoverPage as string, true) || true,
+      includeSectionHeadings: safeBoolean(params?.includeSectionHeadings as string, true) || true,
+      includeQuestionText: safeBoolean(params?.includeQuestionText as string, true) || true,
+      includeUnansweredQuestions: safeBoolean(params?.includeUnansweredQuestions as string, true) || true,
+      includeResearchOutputs: safeBoolean(params?.includeResearchOutputs as string, true) || true,
+      includeRelatedWorks: safeBoolean(params?.includeRelatedWorks as string, true) || true,
     },
     margin : {
       marginTop: safeNumber(params?.marginTop as string, 76),
@@ -98,26 +101,6 @@ function prepareOptions(params: any): OptionsInterface {
   }
 }
 
-// ---------------- Middleware to fetch the JWT ----------------
-const auth = expressjwt({
-  algorithms: ['HS256'],
-  credentialsRequired: false,
-  secret: process.env.JWT_SECRET,
-
-  // Fetch the access token from the cookie
-  getToken: function fromCookie(req) {
-    if (req.cookies?.dmspt) {
-      return req.cookies?.dmspt?.toString();
-    }
-
-    const headerCookie = req.headers.cookie;
-    if (headerCookie) {
-      const parts = headerCookie.split('=');
-      return parts[0] === 'dmspt' ? parts[1] : undefined;
-    }
-  },
-});
-
 // ----------------- Process the incoming Accept types  -----------------
 function processAccept(accept: string): string[] {
   // The accept header may contain a lot of info and several types
@@ -131,7 +114,9 @@ const requiredEnvVars = [
   "APPLICATION_NAME",
   "DYNAMODB_TABLE_NAME",
   "EZID_BASE_URL",
-  "JWT_SECRET",
+  "TOKEN_ISSUER",
+  "TOKEN_AUDIENCES",
+  "ACCESS_TOKEN_NAME",
   "RDS_HOST"
 ];
 requiredEnvVars.forEach(envVar => {
@@ -149,14 +134,15 @@ app.use(cookieParser());
 // Matches patterns like:
 //   /dmps/11.11111/A1B2C3/narrative
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
-app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Response) => {
+app.get("/dmps/{*splat}/narrative{.:ext}", requireAuth, async (req: Request, res: Response) => {
+  const rawLogLevel: string = process.env.LOG_LEVEL ? process.env.LOG_LEVEL.toUpperCase() : 'INFO';
+  const rawEnv: string = process.env.ENV ? process.env.ENV.toUpperCase() : 'DEV';
   // Process the environment variables
-  const logLevel: LogLevelEnum = process.env.LOG_LEVEL ? LogLevelEnum[process.env.LOG_LEVEL.toUpperCase()] : LogLevelEnum.INFO;
-  const env: EnvironmentEnum = process.env.ENV ? EnvironmentEnum[process.env.ENV?.toUpperCase()] : EnvironmentEnum.DEV;
+  const logLevel: LogLevelEnum = LogLevelEnum[rawLogLevel as keyof typeof LogLevelEnum] || LogLevelEnum.INFO;
+  const env: EnvironmentEnum = EnvironmentEnum[rawEnv as keyof typeof EnvironmentEnum] || EnvironmentEnum.DEV;
   const domainName = process.env.DOMAIN_NAME || "localhost:3000";
-  const applicationName = process.env.APPLICATION_NAME;
+  const applicationName = process.env.APPLICATION_NAME || "My app";
   const ezidBaseURL = process.env.EZID_BASE_URL || 'https://doi.org/';
-
 
   // Get the format the user wants the narrative document in from either
   // the specified file extension OR the Accept header
@@ -164,7 +150,6 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
 
   // Handle both string and array cases for req.params.ext
   const extValue = Array.isArray(req.params.ext) ? req.params.ext[0] : req.params.ext;
-
     if (extValue && extValue.length > 0) {
       switch (extValue.toLowerCase()) {
       case "csv": accept = CSV_TYPE; break;
@@ -213,7 +198,7 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
   );
 
   try {
-    const plan: PlanInterface = await loadPlan(requestLogger, fullDMPId, env);
+    const plan: PlanInterface | undefined = await loadPlan(requestLogger, fullDMPId, env);
     if (!plan) {
       requestLogger.warn({ dmpId, jti: token?.jti }, "No Plan found");
       // We return 404 here so that we're not signaling which DMP ids are valid
@@ -233,7 +218,7 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
     );
 
     // Fetch the latest maDMP record for the Plan from the DynamoDB table
-    let maDMP: DMPToolDMPType = await loadMaDMPFromDynamo(requestLogger, domainName, fullDMPId, version);
+    let maDMP: DMPToolDMPType | undefined = await loadMaDMPFromDynamo(requestLogger, domainName, fullDMPId, version || undefined);
     requestLogger.debug(
       { dmpId, maDMPModified: maDMP?.dmp?.modified, jti: token?.jti },
       'Retrieved maDMP metadata from DynamoDB'
@@ -241,7 +226,7 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
 
     // Determine if the maDMP was missing or is out of date or missing the narrative.
     // If so, generate the current maDMP and update the DynamoDB record.
-    const rdsDate: string = convertMySQLDateTimeToRFC3339(plan?.modified);
+    const rdsDate: string | null = convertMySQLDateTimeToRFC3339(plan?.modified);
     if (!maDMP || rdsDate !== maDMP?.dmp?.modified || !maDMP?.dmp?.narrative) {
       const outdated: boolean = maDMP?.dmp?.modified && rdsDate !== maDMP?.dmp?.modified
       maDMP = await handleMissingMaDMP(
@@ -343,7 +328,7 @@ app.get("/dmps/{*splat}/narrative{.:ext}", auth, async (req: Request, res: Respo
       .send("Unable to process your request at this time.");
     return;
   } catch (e) {
-    requestLogger.fatal({ dmpId, jti: token?.jti, err: e }, e.message);
+    requestLogger.fatal({ dmpId, jti: token?.jti, err: e }, toErrorMessage(e));
     res.status(500)
       .send("Document generation failed");
     return;
@@ -377,7 +362,7 @@ if (!process.listeners('SIGTERM').includes(shutdown)) {
 }
 
 // only start listening if this file is run directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   startServer().catch((error) => {
     console.log('Error starting server:', error)
     process.exit(1);
