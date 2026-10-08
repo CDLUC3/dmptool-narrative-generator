@@ -97,4 +97,10 @@ describe("renderPdfWithPuppeteer", () => {
       .rejects.toThrow("pdf failed");
     expect(mockBrowser.close).toHaveBeenCalled();
   });
+
+  it("propagates launch results that cannot create a browser page", async () => {
+    (puppeteer.launch as jest.Mock).mockResolvedValueOnce(undefined as never);
+
+    await expect(renderPDF("<p>doc</p>")).rejects.toThrow();
+  });
 });
