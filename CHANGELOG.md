@@ -43,6 +43,7 @@
 - Updated the `glob` and `js-yaml` dependencies
 
 ## Fixed
+- Added override for `js-yaml` (`^4.1.1`) under `@istanbuljs/load-nyc-config` to remove the vulnerable `argparse@1`/`sprintf-js` dependency chain from `jest`/`ts-jest`. High vulnerability in `handlebars` was addressed by updating to `v4.7.10` via `npm audit fix` [#470]
 - Fixed `hasPermissionToDownloadNarrative` to allow users to download their own plan even if its not yet published
 
 ## Deleted
