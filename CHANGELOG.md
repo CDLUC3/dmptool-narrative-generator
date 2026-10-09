@@ -16,6 +16,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `@dmptool/utils` to `v2.2.0` to get the conditional logic code [#510]
 - Updated buildspec to run run audit, lint and tests
 - Updated to Typescript 6 and ESM
 - Updated `csv.ts` to display `researchOutputTable` answers in a more readable format
