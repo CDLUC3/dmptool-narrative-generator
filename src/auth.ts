@@ -3,6 +3,7 @@ import type { NextFunction, Response as ExpressResponse } from 'express';
 import { expressJwtSecret } from 'jwks-rsa';
 import { expressjwt, type IsRevoked, type Request as JWTRequest } from "express-jwt";
 
+const AUTH_HOST = process.env.AUTH_HOST || "http://localhost:4646";
 const ISSUER = process.env.TOKEN_ISSUER || "http://localhost:4646";
 const AUDIENCE = process.env.TOKEN_AUDIENCES || 'my\\-[a-z]+';
 const ACCESS_TOKEN_NAME = process.env.ACCESS_TOKEN_NAME || 'access_token';
@@ -31,7 +32,7 @@ const isRevokedCallback: IsRevoked = async (
   }
 
   // Call the issuer's revocation check endpoint with the jti to see if it has been revoked
-  const revocationCheckURL = `${ISSUER}//revocations/${jti}`;
+  const revocationCheckURL = `${AUTH_HOST}//revocations/${jti}`;
   const response: Response = await fetch(revocationCheckURL);
   return response.status === 200 || response.status === 400;
 }
@@ -76,17 +77,16 @@ export const validateClaims = (
   const payload: JwtPayload | undefined = req.auth;
   if (
     payload && (
-      typeof payload.id !== 'string'
+      (typeof payload.id !== 'string' && typeof payload.id !== 'number')
       || typeof payload.email !== 'string'
       || typeof payload.givenName !== 'string'
       || typeof payload.surName !== 'string'
       || typeof payload.affiliationId !== 'string'
       || typeof payload.languageId !== 'string'
       || typeof payload.role !== 'string'
-      || typeof payload.jti !== 'string'
+      || (typeof payload.jti !== 'string' && typeof payload.jti !== 'number')
       || typeof payload.tokenVersion !== 'number')
   ) {
-
     return res.status(401).json({ error: 'Access token has invalid custom claims' });
   }
 
@@ -105,7 +105,7 @@ export const requireAuth = expressjwt({
     cache: true,
     rateLimit: true,
     jwksRequestsPerMinute: 5,
-    jwksUri: `${ISSUER}/jwks`,
+    jwksUri: `${AUTH_HOST}/jwks`,
   }) as unknown as Secret, // Type cast required for express-jwt secret compatibility
   audience: new RegExp(AUDIENCE),
   issuer: ISSUER,

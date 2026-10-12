@@ -74,10 +74,13 @@ describe("auth middleware", () => {
     };
 
     validateClaims({ auth: validClaims } as never, { status } as never, next);
+    validateClaims({
+      auth: { ...validClaims, id: 1, jti: 2 },
+    } as never, { status } as never, next);
     validateClaims({ auth: { ...validClaims, tokenVersion: "1" } } as never, { status } as never, next);
     validateClaims({} as never, { status } as never, next);
 
-    expect(next).toHaveBeenCalledTimes(2);
+    expect(next).toHaveBeenCalledTimes(3);
     expect(status).toHaveBeenCalledWith(401);
     expect(json).toHaveBeenCalledWith({ error: "Access token has invalid custom claims" });
   });

@@ -23,6 +23,7 @@
     "trivy-med": "./src/scripts/trivy-med.sh"
   },
   "overrides": {
+    "argparse": "3.0.2",
     "@humanfs/node": "0.17.0",
     "axios": "1.20.0",
     "brace-expansion": "5.0.12",
