@@ -1,7 +1,9 @@
 # dmptool-narrative-generator
 
 ## Added
-- Added new `TOKEN_ISSUER`, `TOKEN_AUDIENCES` and `ACCESS_TOKEN_NAME` environment variables
+- Added additional unit tests
+- Added override for `argparse` dependency
+- Added new `AUTH TOKEN`, `TOKEN_ISSUER`, `TOKEN_AUDIENCES` and `ACCESS_TOKEN_NAME` environment variables
 - Added new `auth.ts` file to handle authentication and authorization for narrative generation
 - Added `jwks-rsa` package and override for `axios` dependency
 - Added `version` to `loadMaDMPFromDynamo` so that we can load the versioned plan to JSON. Fixed issue with the detected `ext` value for `app.get("/dmps/{*splat}/narrative{.:ext}"`. Also, fixed some security vulnerabilties for `brace-expansion`, `js-yaml` and `puppeteer` [#342]
