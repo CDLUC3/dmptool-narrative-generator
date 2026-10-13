@@ -173,6 +173,7 @@ describe("renderHtmlTemplate", () => {
                     json: {
                       type: "textArea",
                       answer: "Some data",
+                      comment: "Additional context",
                       meta: { schemaVersion: '1.0' }
                     }
                   }
@@ -190,6 +191,7 @@ describe("renderHtmlTemplate", () => {
 
     expect(html).toContain("Data Collection");
     expect(html).toContain("Some data"); // answerToHTML -> <p>Some data</p>
+    expect(html).toContain("Comment:</strong> Additional context");
     expect(html).toContain("Not answered");
   });
 

@@ -45,13 +45,15 @@ describe("auth middleware", () => {
     await expect(authOptions.isRevoked({}, { payload: {} })).resolves.toBe(true);
   });
 
-  it("checks string and object payload jtis against the revocation endpoint", async () => {
+  it("checks string and object payload jti values against the revocation endpoint", async () => {
     const fetchMock = jest.spyOn(global, "fetch")
-      .mockResolvedValueOnce({ status: 200 } as Response)
-      .mockResolvedValueOnce({ status: 400 } as Response)
-      .mockResolvedValueOnce({ status: 404 } as Response);
+      .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({ revoked: true }) } as never)
+      .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({ revoked: false }) } as never)
+      .mockResolvedValueOnce({ status: 400, json: () => Promise.resolve({ revoked: true }) } as never)
+      .mockResolvedValueOnce({ status: 404, json: () => Promise.resolve({ revoked: false }) } as never);
 
     await expect(authOptions.isRevoked({}, { payload: '{"jti":"string-jti"}' })).resolves.toBe(true);
+    await expect(authOptions.isRevoked({}, { payload: '{"jti":"string-jti"}' })).resolves.toBe(false);
     await expect(authOptions.isRevoked({}, { payload: { jti: "object-jti" } })).resolves.toBe(true);
     await expect(authOptions.isRevoked({}, { payload: { jti: "active-jti" } })).resolves.toBe(false);
     expect(fetchMock).toHaveBeenNthCalledWith(1, "http://localhost:4646//revocations/string-jti");
@@ -74,10 +76,13 @@ describe("auth middleware", () => {
     };
 
     validateClaims({ auth: validClaims } as never, { status } as never, next);
+    validateClaims({
+      auth: { ...validClaims, id: 1, jti: 2 },
+    } as never, { status } as never, next);
     validateClaims({ auth: { ...validClaims, tokenVersion: "1" } } as never, { status } as never, next);
     validateClaims({} as never, { status } as never, next);
 
-    expect(next).toHaveBeenCalledTimes(2);
+    expect(next).toHaveBeenCalledTimes(3);
     expect(status).toHaveBeenCalledWith(401);
     expect(json).toHaveBeenCalledWith({ error: "Access token has invalid custom claims" });
   });

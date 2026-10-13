@@ -43,6 +43,7 @@ services:
 
       - "EZID_BASE_URL=https://doi.org"
 
+      - "AUTH_HOST=http://auth:4646"
       - "TOKEN_ISSUER=http://auth:4646"
 
       # Using the Apollo server network's LocalStack endpoint
