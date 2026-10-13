@@ -18,6 +18,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `package-lock.json` with new version of `@dmptool/utils` [#388]
 - Updated `@dmptool/utils` to `v2.2.2` to get bug fixes for customization and research output [#388]
 - Updated `@dmptool/utils` to `v2.2.0` to get the conditional logic code [#510]
 - Updated buildspec to run run audit, lint and tests
