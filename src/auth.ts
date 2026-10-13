@@ -26,6 +26,9 @@ const isRevokedCallback: IsRevoked = async (
   }
 
   const payload: JwtPayload = typeof token.payload === 'string' ? JSON.parse(token.payload) : token.payload;
+
+console.log('TOKEN:', payload);
+
   const jti = payload.jti as string;
   if (!jti) {
     return true; // Revoke/reject if jti is missing
@@ -34,6 +37,9 @@ const isRevokedCallback: IsRevoked = async (
   // Call the issuer's revocation check endpoint with the jti to see if it has been revoked
   const revocationCheckURL = `${AUTH_HOST}//revocations/${jti}`;
   const response: Response = await fetch(revocationCheckURL);
+
+console.log('REVOCATION CHECK RESPONSE:', response.status, await response.text());
+
   return response.status === 200 || response.status === 400;
 }
 
