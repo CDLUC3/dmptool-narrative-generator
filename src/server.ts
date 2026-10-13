@@ -199,6 +199,9 @@ app.get("/dmps/{*splat}/narrative{.:ext}", requireAuth, async (req: Request, res
 
   try {
     const plan: PlanInterface | undefined = await loadPlan(requestLogger, fullDMPId, env);
+
+console.log('PLAN:', plan);
+
     if (!plan) {
       requestLogger.warn({ dmpId, jti: token?.jti }, "No Plan found");
       // We return 404 here so that we're not signaling which DMP ids are valid
@@ -248,6 +251,10 @@ app.get("/dmps/{*splat}/narrative{.:ext}", requireAuth, async (req: Request, res
 
     // Determine if the caller has permission to view the DMP's narrative
     const hasPermission = hasPermissionToDownloadNarrative(maDMP, usersPlans, token);
+
+console.log('TOKEN:', token);
+console.log('HAS PERMISSION:', hasPermission);
+
     if (!hasPermission) {
       requestLogger.warn({ dmpId, jti: token?.jti }, "User does not have permission to download narrative");
       // We return 404 here so that we're not signaling which DMP ids are valid
