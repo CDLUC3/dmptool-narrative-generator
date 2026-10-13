@@ -45,11 +45,11 @@ describe("auth middleware", () => {
     await expect(authOptions.isRevoked({}, { payload: {} })).resolves.toBe(true);
   });
 
-  it("checks string and object payload jtis against the revocation endpoint", async () => {
+  it("checks string and object payload jti values against the revocation endpoint", async () => {
     const fetchMock = jest.spyOn(global, "fetch")
-      .mockResolvedValueOnce({ status: 200 } as Response)
-      .mockResolvedValueOnce({ status: 400 } as Response)
-      .mockResolvedValueOnce({ status: 404 } as Response);
+      .mockResolvedValueOnce({ status: 200, text: () => "revoked" } as never)
+      .mockResolvedValueOnce({ status: 400, text: () => "revoked" } as never)
+      .mockResolvedValueOnce({ status: 404, text: () => "revoked" } as never);
 
     await expect(authOptions.isRevoked({}, { payload: '{"jti":"string-jti"}' })).resolves.toBe(true);
     await expect(authOptions.isRevoked({}, { payload: { jti: "object-jti" } })).resolves.toBe(true);
