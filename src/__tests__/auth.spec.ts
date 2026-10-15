@@ -56,7 +56,7 @@ describe("auth middleware", () => {
     await expect(authOptions.isRevoked({}, { payload: '{"jti":"string-jti"}' })).resolves.toBe(false);
     await expect(authOptions.isRevoked({}, { payload: { jti: "object-jti" } })).resolves.toBe(true);
     await expect(authOptions.isRevoked({}, { payload: { jti: "active-jti" } })).resolves.toBe(false);
-    expect(fetchMock).toHaveBeenNthCalledWith(1, "http://localhost:4646//revocations/string-jti");
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "http://localhost:4646/revocations/string-jti");
   });
 
   it("accepts valid claims and rejects invalid claims", () => {
