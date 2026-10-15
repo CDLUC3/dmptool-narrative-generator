@@ -18,6 +18,9 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `@dmptool/utils` to `v2.2.3`
+- Updated local `Dockerfile` to run `npm install` instead of `npm ci`
+- Fixed a bug with the token revocation check URL in `auth.ts`
 - Updated `package-lock.json` with new version of `@dmptool/utils` [#388]
 - Updated `@dmptool/utils` to `v2.2.2` to get bug fixes for customization and research output [#388]
 - Updated `@dmptool/utils` to `v2.2.0` to get the conditional logic code [#510]
