@@ -41,12 +41,8 @@ WORKDIR /app
 # This prevents it from downloading its own, which may be of the wrong architecture.
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# Install all deps
-# Copy package.json and package-lock.json
-# to the /app working directory
 COPY package*.json ./
 RUN npm ci
-
 COPY . .
 
 # Expose API port

@@ -53,7 +53,7 @@ describe("auth middleware", () => {
       .mockResolvedValueOnce({ status: 404, json: () => Promise.resolve({ revoked: false }) } as never);
 
     await expect(authOptions.isRevoked({}, { payload: '{"jti":"string-jti"}' })).resolves.toBe(true);
-    await expect(authOptions.isRevoked({}, { payload: '{"jti":"bad-jti"}' })).resolves.toBe(false);
+    await expect(authOptions.isRevoked({}, { payload: '{"jti":"string-jti"}' })).resolves.toBe(false);
     await expect(authOptions.isRevoked({}, { payload: { jti: "object-jti" } })).resolves.toBe(true);
     await expect(authOptions.isRevoked({}, { payload: { jti: "active-jti" } })).resolves.toBe(false);
     expect(fetchMock).toHaveBeenNthCalledWith(1, "http://localhost:4646/revocations/string-jti");
