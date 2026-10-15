@@ -44,10 +44,8 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 # Install all deps
 # Copy package.json and package-lock.json
 # to the /app working directory
-COPY package*.json tsconfig.json .env dmptool-*.tgz ./
-
-# Install dependencies in /app
-RUN npm install
+COPY package*.json ./
+RUN npm ci
 
 COPY . .
 

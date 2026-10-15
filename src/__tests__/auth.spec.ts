@@ -46,7 +46,7 @@ describe("auth middleware", () => {
   });
 
   it("checks string and object payload jti values against the revocation endpoint", async () => {
-    jest.spyOn(global, "fetch")
+    const fetchMock = jest.spyOn(global, "fetch")
       .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({ revoked: true }) } as never)
       .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({ revoked: false }) } as never)
       .mockResolvedValueOnce({ status: 400, json: () => Promise.resolve({ revoked: true }) } as never)
@@ -56,6 +56,7 @@ describe("auth middleware", () => {
     await expect(authOptions.isRevoked({}, { payload: '{"jti":"bad-jti"}' })).resolves.toBe(false);
     await expect(authOptions.isRevoked({}, { payload: { jti: "object-jti" } })).resolves.toBe(true);
     await expect(authOptions.isRevoked({}, { payload: { jti: "active-jti" } })).resolves.toBe(false);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "http://localhost:4646/revocations/string-jti");
   });
 
   it("accepts valid claims and rejects invalid claims", () => {
