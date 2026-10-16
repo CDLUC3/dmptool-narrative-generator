@@ -1,7 +1,7 @@
-
-import { renderCSV } from "../csv";
-import {AnyAnswerType, TableAnswerType} from "@dmptool/types";
-import {DMPExtensionNarrative} from "@dmptool/utils";
+import { describe, it, expect } from "@jest/globals";
+import { renderCSV } from "../csv.js";
+import type { AnyAnswerType, TableAnswerType } from "@dmptool/types";
+import type { DMPExtensionNarrative } from "@dmptool/utils";
 
 const defaultDisplayOptions = {
   includeCoverPage: true,
@@ -102,6 +102,16 @@ describe("renderCsv + answerToCSV integration", () => {
     expect(csv).toContain("X; Y");
   });
 
+  it("leaves empty checkbox answers blank", () => {
+    const data: DMPExtensionNarrative = wrap({
+      type: "checkBoxes",
+      answer: [],
+      meta: { schemaVersion: "1.0.0" },
+    });
+
+    expect(renderCSV(baseDisplay, { narrative: { template: data } }).trim()).toBe("Answer");
+  });
+
   it("handles affiliationSearch with id", () => {
     const data: DMPExtensionNarrative = wrap({
       type: "affiliationSearch",
@@ -117,7 +127,7 @@ describe("renderCsv + answerToCSV integration", () => {
   it("handles affiliationSearch without id", () => {
     const data: DMPExtensionNarrative = wrap({
       type: "affiliationSearch",
-      answer: { affiliationName: "Uni", affiliationId: null },
+      answer: { affiliationName: "Uni", affiliationId: "" },
       meta: {
         schemaVersion: "1.0.0",
       }
@@ -166,6 +176,60 @@ describe("renderCsv + answerToCSV integration", () => {
     });
     const csv = renderCSV(baseDisplay, { narrative: { template: data } });
     expect(csv).toContain("Just the answer (Comment: This is a comment)");
+  });
+
+  it("renders all research output column variants and empty values", () => {
+    const data: DMPExtensionNarrative = wrap({
+      type: "researchOutputTable",
+      columnHeadings: ["Host", "Metadata", "License", "Flags", "Size", "Title"],
+      answer: [{
+        columns: [
+          { commonStandardId: "host", answer: [{ repositoryName: "Repo", repositoryId: "repo-id" }, { repositoryName: "" }] },
+          { commonStandardId: "metadata", answer: [{ metadataStandardName: "Schema", metadataStandardId: "schema-id" }] },
+          { commonStandardId: "license_ref", answer: [{ licenseName: "CC-BY", licenseId: "cc-by" }] },
+          { commonStandardId: "data_flags", answer: ["sensitive", "restricted"] },
+          { commonStandardId: "byte_size", answer: { value: 10, context: "MB" } },
+          { commonStandardId: "title", answer: "Dataset" },
+        ],
+      }, {
+        columns: [
+          { commonStandardId: "host", answer: [] },
+          { commonStandardId: "metadata", answer: [] },
+          { commonStandardId: "license_ref", answer: [] },
+          { commonStandardId: "data_flags", answer: [] },
+          { commonStandardId: "byte_size", answer: { value: 0, context: "MB" } },
+          { commonStandardId: "title", answer: "" },
+        ],
+      }],
+      meta: { schemaVersion: "1.0.0" },
+    } as AnyAnswerType);
+
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
+    expect(csv).toContain("Host: Repo (repo-id)");
+    expect(csv).toContain("Metadata: Schema (schema-id)");
+    expect(csv).toContain("License: CC-BY (cc-by)");
+    expect(csv).toContain("Flags: sensitive, restricted");
+    expect(csv).toContain("Size: 10 MB");
+    expect(csv).toContain("Host: N/A");
+    expect(csv).toContain("Size: N/A");
+  });
+
+  it("treats research output entries without recognized names as unavailable", () => {
+    const data: DMPExtensionNarrative = wrap({
+      type: "researchOutputTable",
+      columnHeadings: ["Host", "Metadata", "License"],
+      answer: [{
+        columns: [
+          { commonStandardId: "host", answer: [{}] },
+          { commonStandardId: "metadata", answer: [{}] },
+          { commonStandardId: "license_ref", answer: [{}] },
+        ],
+      }],
+      meta: { schemaVersion: "1.0.0" },
+    } as AnyAnswerType);
+
+    const csv = renderCSV(baseDisplay, { narrative: { template: data } });
+    expect(csv).toContain("Host: N/A; Metadata: N/A; License: N/A");
   });
 });
 
@@ -222,5 +286,41 @@ describe("renderCsv general", () => {
       {}
     );
     expect(csv.trim()).toBe("");
+  });
+
+  it("skips sections without questions", () => {
+    const csv = renderCSV(
+      { ...defaultDisplayOptions, includeSectionHeadings: true, includeQuestionText: true },
+      { narrative: { template: { section: [{ title: "Empty section" }] } } }
+    );
+
+    expect(csv).toBe("Section,Question,Answer\n");
+  });
+
+  it("leaves research outputs without column headings blank", () => {
+    const data = {
+      narrative: {
+        template: {
+          section: [{
+            title: "Section",
+            question: [{
+              text: "Question",
+              answer: {
+                json: {
+                  type: "researchOutputTable",
+                  answer: [],
+                  meta: { schemaVersion: "1.0.0" },
+                } as AnyAnswerType,
+              },
+            }],
+          }],
+        },
+      },
+    };
+
+    expect(renderCSV(
+      { ...defaultDisplayOptions, includeSectionHeadings: false, includeQuestionText: false },
+      data
+    ).trim()).toBe("Answer");
   });
 });

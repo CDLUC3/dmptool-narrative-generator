@@ -1,22 +1,23 @@
 import Handlebars from "handlebars";
-import pluralize from "pluralize";
-import { formatDate } from "./helper";
-import {
+import pluralize from "pluralize-esm";
+import { formatDate } from "./helper.js";
+import type {
   DisplayOptionsInterface,
   FontInterface,
   MarginInterface,
-} from "./server";
+} from "./server.js";
 import {
-  AffiliationSearchAnswerType,
+  type AffiliationSearchAnswerType,
   AnswerSchemaMap,
-  AnyAnswerType,
-  DateAnswerType,
-  DateRangeAnswerType,
-  DMPToolDMPType,
-  NumberRangeAnswerType,
-  TableAnswerType,
-  TextAreaAnswerType,
-  AnyResearchOutputTableColumnAnswerType, DefaultResearchOutputAccessLevelColumn
+  type AnyAnswerType,
+  type DateAnswerType,
+  type DateRangeAnswerType,
+  type DMPToolDMPType,
+  type NumberRangeAnswerType,
+  type TableAnswerType,
+  type TextAreaAnswerType,
+  type AnyResearchOutputTableColumnAnswerType,
+  DefaultResearchOutputAccessLevelColumn
 } from "@dmptool/types";
 
 /**
@@ -280,7 +281,7 @@ function workTypeForDisplay(workType: string, pluralizeIt = true): string {
 function relatedWorksForType(
   workType: string,
   works: DMPToolDMPType["dmp"]["related_identifier"]
-): string {
+): string | null {
   if (!Array.isArray(works) || works.length < 1) return "";
 
   const out: string[] = works.filter((work: { type: string, identifier: string }) => work.type.includes(workType))
@@ -316,6 +317,7 @@ Handlebars.registerHelper(
       const idForDisplay = id?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
       return `- <strong>ORCID:</strong> <a href="${id?.identifier}" target="_blank">${idForDisplay}</a>`
     }
+    return "";
   }
 );
 

@@ -1,6 +1,12 @@
 # dmptool-narrative-generator
 
 ## Added
+- Added additional unit tests
+- Added override for `argparse` dependency
+- Added new `AUTH TOKEN`, `TOKEN_ISSUER`, `TOKEN_AUDIENCES` and `ACCESS_TOKEN_NAME` environment variables
+- Added new `auth.ts` file to handle authentication and authorization for narrative generation
+- Added `jwks-rsa` package and override for `axios` dependency
+- Added `version` to `loadMaDMPFromDynamo` so that we can load the versioned plan to JSON. Fixed issue with the detected `ext` value for `app.get("/dmps/{*splat}/narrative{.:ext}"`. Also, fixed some security vulnerabilties for `brace-expansion`, `js-yaml` and `puppeteer` [#342]
 - Added overrides for `axios`, `brace-expansion`, `form-data`, `js-yaml` and `qs`  
 - Added override for `follow-redirects` dependency
 - Added override for `axios` dependency
@@ -12,6 +18,13 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Updated `@dmptool/utils` to `v2.2.3`
+- Fixed a bug with the token revocation check URL in `auth.ts`
+- Updated `package-lock.json` with new version of `@dmptool/utils` [#388]
+- Updated `@dmptool/utils` to `v2.2.2` to get bug fixes for customization and research output [#388]
+- Updated `@dmptool/utils` to `v2.2.0` to get the conditional logic code [#510]
+- Updated buildspec to run run audit, lint and tests
+- Updated to Typescript 6 and ESM
 - Updated `csv.ts` to display `researchOutputTable` answers in a more readable format
 - Updated `html.ts` and `csv.ts` to work with new `commonStandardId` property
 - Updated `@dmptool/types` to v4.0.0
@@ -36,8 +49,11 @@
 - Updated the `glob` and `js-yaml` dependencies
 
 ## Fixed
+- Added override for `js-yaml` (`^4.1.1`) under `@istanbuljs/load-nyc-config` to remove the vulnerable `argparse@1`/`sprintf-js` dependency chain from `jest`/`ts-jest`. High vulnerability in `handlebars` was addressed by updating to `v4.7.10` via `npm audit fix` [#470]
 - Fixed `hasPermissionToDownloadNarrative` to allow users to download their own plan even if its not yet published
+
 ## Deleted
+- Removed the `JWT_SECRET` environment variable
 - Removed old override for `follow-redirects`
 - Removed override for `axios`
 - Removed overrides for `picomatch`, `brace-expansion`, `flatted`, `lodash` and `path-to-regexp`

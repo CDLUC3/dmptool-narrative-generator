@@ -33,6 +33,26 @@ phases:
       - echo "Running in ${NODE_ENV} - started on `date`"
       - cd $CODEBUILD_SRC_DIR
 
+      # Ensure we're running in CI mode nd that it always installs the devDependencies for our tests
+      - CI=true
+    
+      # CI deletes the node_modules folder and installs the dependencies as defined in package-lock.json
+      - echo "Installing dependencies..."
+      - npm ci --include=dev
+
+      # Run NPM audit to check for vulnerabilities in the prod dependencies
+      - echo "Running NPM audit..."
+      - npm audit --omit=dev --audit-level=high
+
+      # Run the linter checks
+      - echo "Running linter checks"
+      - npm run lint
+
+      # Run the tests
+      - echo "Running tests"
+      - npm run test
+
+
       # Build the Docker image
       - echo Building the Docker image...
       - docker build -f Dockerfile.aws -t $SHORT_ECR_URI:narrative-gen-latest .

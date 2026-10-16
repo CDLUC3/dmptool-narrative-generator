@@ -1,9 +1,25 @@
-// @ts-check
 import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
+import globals from 'globals';
+import tseslintPlugin from '@typescript-eslint/eslint-plugin';
+import tseslintParser from '@typescript-eslint/parser';
 
-export default tseslint.config(
+export default [
+  {
+    ignores: ['dist/**', 'coverage/**'],
+  },
   eslint.configs.recommended,
-  ...tseslint.configs.strict,
-  ...tseslint.configs.stylistic,
-);
+  {
+    files: ['**/*.ts'],
+    languageOptions: {
+      globals: { ...globals.node },
+      parser: tseslintParser,
+    },
+    plugins: {
+      '@typescript-eslint': tseslintPlugin,
+    },
+    rules: {
+      ...tseslintPlugin.configs.recommended.rules,
+      '@typescript-eslint/consistent-type-imports': 'error',
+    },
+  },
+];

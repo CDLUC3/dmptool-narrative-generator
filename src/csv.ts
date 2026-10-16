@@ -1,4 +1,4 @@
-import {
+import type {
   AffiliationSearchAnswerType,
   AnyAnswerType,
   AnyResearchOutputTableColumnAnswerType,
@@ -12,10 +12,10 @@ import {
   ResearchOutputTableRowAnswerType,
   TextAreaAnswerType
 } from "@dmptool/types";
-import { DisplayOptionsInterface } from "./server";
-import { formatDate } from "./helper";
+import type { DisplayOptionsInterface } from "./server.js";
+import { formatDate } from "./helper.js";
 import { stringify } from "csv-stringify/sync";
-import { DMPExtensionNarrative } from "@dmptool/utils";
+import type { DMPExtensionNarrative } from "@dmptool/utils";
 
 // Convert an array of values in an answer to a single entry
 function answerArrayToString(

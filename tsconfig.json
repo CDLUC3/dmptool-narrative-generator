@@ -1,14 +1,19 @@
 {
   "compilerOptions": {
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2024"],
     "rootDir": "src",
     "outDir": "dist",
-    "target": "es2020",
-    "moduleResolution": "node",
+    "strict": true,
     "esModuleInterop": true,
-    "module": "commonjs",
-    "types": ["jest", "jest-expect-message"],
-    "sourceMap": true
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": true,
+    "types": ["node"]
   },
-  "include": ["src", "src/__tests__"],
-  "exclude": ["node_modules"],
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/__tests__/**", "src/**/*.spec.ts"]
 }

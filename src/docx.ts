@@ -1,6 +1,6 @@
 import HtmlToDocx from "@turbodocx/html-to-docx";
-import { FontInterface, MarginInterface } from "./server";
-import { Logger } from "pino";
+import type { FontInterface, MarginInterface } from "./server.js";
+import type { Logger } from "pino";
 
 // Convert millimeters to TWIPs (Twentieth of a Point)
 function mmToTwip(mm: number): number {
@@ -31,7 +31,7 @@ export async function renderDOCX(
   html: string,
   margin: MarginInterface,
   font: FontInterface,
-): Promise<Buffer> {
+): Promise<Buffer | undefined> {
   const processedHtml = html
     .replace(/<(td|th)(\s[^>]*)?>/gi, (_, tag, attrs = '') => {
       const style = 'border:1px solid black;padding:2px;';
