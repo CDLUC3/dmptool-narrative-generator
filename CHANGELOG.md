@@ -1,6 +1,7 @@
 # dmptool-narrative-generator
 
 ## Added
+- Added logic to sanitize HTML
 - Added `apt-get upgrade` to Dockerfiles so that we get latest updates for all package
 - Added additional unit tests
 - Added override for `argparse` dependency
