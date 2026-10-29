@@ -1,21 +1,22 @@
 import Handlebars from "handlebars";
-import pluralize from "pluralize";
-import { formatDate } from "./helper";
-import {
+import pluralize from "pluralize-esm";
+import { formatDate } from "./helper.js";
+import type {
   DisplayOptionsInterface,
   FontInterface,
   MarginInterface,
-} from "./server";
+} from "./server.js";
 import {
-  AffiliationSearchAnswerType,
+  type AffiliationSearchAnswerType,
   AnswerSchemaMap,
-  AnyAnswerType,
-  DateAnswerType,
-  DateRangeAnswerType,
-  DMPToolDMPType,
-  NumberRangeAnswerType,
-  TableAnswerType,
-  TextAreaAnswerType,
+  type AnyAnswerType,
+  type DateAnswerType,
+  type DateRangeAnswerType,
+  type DMPToolDMPType,
+  type NumberRangeAnswerType,
+  type TableAnswerType,
+  type TextAreaAnswerType,
+  type AnyResearchOutputTableColumnAnswerType,
   DefaultResearchOutputAccessLevelColumn
 } from "@dmptool/types";
 
@@ -24,9 +25,9 @@ import {
  * Handles the specialized column types that only appear in research output tables,
  * then falls back to the generic answerToHTML for standard types.
  */
-function researchOutputColumnToHTML(col: AnyAnswerType): string {
-  switch (col.type) {
-    case "repositorySearch": {
+function researchOutputColumnToHTML(col: AnyResearchOutputTableColumnAnswerType): string {
+  switch (col.commonStandardId) {
+    case "host": {
       if (!Array.isArray(col.answer) || col.answer.length === 0) return "<p>None specified</p>";
       const items = col.answer.map((repo) =>
         repo.repositoryId
@@ -36,7 +37,7 @@ function researchOutputColumnToHTML(col: AnyAnswerType): string {
       return `<ul>${items.join("")}</ul>`;
     }
 
-    case "metadataStandardSearch": {
+    case "metadata": {
       if (!Array.isArray(col.answer) || col.answer.length === 0) return "<p>None specified</p>";
       const items = col.answer.map((std) =>
         std.metadataStandardId
@@ -46,7 +47,7 @@ function researchOutputColumnToHTML(col: AnyAnswerType): string {
       return `<ul>${items.join("")}</ul>`;
     }
 
-    case "licenseSearch": {
+    case "license_ref": {
       if (!Array.isArray(col.answer) || col.answer.length === 0) return "<p>None specified</p>";
       const items = col.answer.map((lic) =>
         lic.licenseId
@@ -56,12 +57,16 @@ function researchOutputColumnToHTML(col: AnyAnswerType): string {
       return `<ul>${items.join("")}</ul>`;
     }
 
-    case "selectBox":
-    case "radioButtons": {
+    case "type":
+    case "data_flags": {
       if (!col.answer) return "<p>None specified</p>";
       const options = DefaultResearchOutputAccessLevelColumn.content.options;
       const match = options?.find((opt) => opt.value === col.answer);
       return `<p>${match?.label ?? col.answer}</p>`;
+    }
+
+    case "byte_size": {
+      return `<p>${col.answer.value} ${col.answer.context}</p>`
     }
 
     default:
@@ -194,7 +199,7 @@ function answerToHTML(json: AnyAnswerType): string {
 
         const filteredCols = cols.filter((_, i) => !excludedIndices.has(i));
 
-        // For each row, pull the description column and render it as a summary above the table, 
+        // For each row, pull the description column and render it as a summary above the table,
         // then exclude it from the table itself
         const stripPTagsFromHeader = (html: string) => html.replace(/^<p>|<\/p>$/g, "");
         // Find the indices of the Title, Description, and Output Type columns for use in the row summaries
@@ -202,10 +207,10 @@ function answerToHTML(json: AnyAnswerType): string {
         const descriptionIdx = cols.indexOf("Description");
         const outputTypeIdx = cols.indexOf("Output Type");
         const rowSummaries = rows.map((row) => {
-          const title = titleIdx >= 0 ? stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[titleIdx] as AnyAnswerType)) : "";
-          const description = descriptionIdx >= 0 ? researchOutputColumnToHTML(row.columns[descriptionIdx] as AnyAnswerType) : "";
+          const title = titleIdx >= 0 ? stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[titleIdx] as AnyResearchOutputTableColumnAnswerType)) : "";
+          const description = descriptionIdx >= 0 ? researchOutputColumnToHTML(row.columns[descriptionIdx] as AnyResearchOutputTableColumnAnswerType) : "";
           const outputType = outputTypeIdx >= 0
-            ? stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[outputTypeIdx] as AnyAnswerType))
+            ? stripPTagsFromHeader(researchOutputColumnToHTML(row.columns[outputTypeIdx] as AnyResearchOutputTableColumnAnswerType))
               .replace(/[-_]/g, " ") // Replace hyphens and underscores with spaces
               .replace(/\b\w/g, (c) => c.toUpperCase()) // Capitalize the first letter of each word to make it title case
             : "";
@@ -224,7 +229,7 @@ function answerToHTML(json: AnyAnswerType): string {
           const tds = row.columns
             .slice(0, cols.length)
             .filter((_, i) => !excludedIndices.has(i))
-            .map((col) => `<td>${researchOutputColumnToHTML(col as AnyAnswerType)}</td>`)
+            .map((col) => `<td>${researchOutputColumnToHTML(col as AnyResearchOutputTableColumnAnswerType)}</td>`)
             .join("");
           return `<tr>${tds}</tr>`;
         }).join("");
@@ -276,7 +281,7 @@ function workTypeForDisplay(workType: string, pluralizeIt = true): string {
 function relatedWorksForType(
   workType: string,
   works: DMPToolDMPType["dmp"]["related_identifier"]
-): string {
+): string | null {
   if (!Array.isArray(works) || works.length < 1) return "";
 
   const out: string[] = works.filter((work: { type: string, identifier: string }) => work.type.includes(workType))
@@ -312,6 +317,7 @@ Handlebars.registerHelper(
       const idForDisplay = id?.identifier?.replace(/^(https?:\/\/)?(orcid\.org\/)?/, "")
       return `- <strong>ORCID:</strong> <a href="${id?.identifier}" target="_blank">${idForDisplay}</a>`
     }
+    return "";
   }
 );
 

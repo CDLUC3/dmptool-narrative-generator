@@ -1,4 +1,46 @@
-import {
+import { afterEach, beforeEach, describe, expect, it, jest } from "@jest/globals";
+import type { Logger } from "pino";
+import type { JWTAccessToken } from "../helper.js";
+import type { DMPToolDMPType } from "@dmptool/types";
+import type { PlanInterface, UserPlanInterface } from "../dataAccess.js";
+
+// Mock all imported functions from @dmptool/utils
+const mockSSMParameter = jest.fn();
+const mockQueryTable = jest.fn();
+const mockGetDMPs = jest.fn();
+const mockCreateDMP = jest.fn();
+const mockUpdateDMP = jest.fn();
+const mockPlanToDMPCommonStandard = jest.fn();
+jest.unstable_mockModule("@dmptool/utils", () => ({
+  default: {
+    getSSMParameter: mockSSMParameter,
+    queryTable: mockQueryTable,
+    getDMPs: mockGetDMPs,
+    createDMP: mockCreateDMP,
+    updateDMP: mockUpdateDMP,
+    planToDMPCommonStandard: mockPlanToDMPCommonStandard,
+    EnvironmentEnum: {
+      DEV: "dev",
+      STAGE: "stage",
+      PROD: "prod"
+    },
+    DMP_LATEST_VERSION: "latest"
+  },
+  getSSMParameter: mockSSMParameter,
+  queryTable: mockQueryTable,
+  getDMPs: mockGetDMPs,
+  createDMP: mockCreateDMP,
+  updateDMP: mockUpdateDMP,
+  planToDMPCommonStandard: mockPlanToDMPCommonStandard,
+  EnvironmentEnum: {
+    DEV: "dev",
+    STAGE: "stage",
+    PROD: "prod"
+  },
+  DMP_LATEST_VERSION: "latest"
+}));
+
+const {
   getSSMParameter,
   queryTable,
   getDMPs,
@@ -7,35 +49,15 @@ import {
   planToDMPCommonStandard,
   EnvironmentEnum,
   DMP_LATEST_VERSION
-} from "@dmptool/utils";
-import { Logger } from "pino";
-import {
+} = (await import("@dmptool/utils")).default;
+
+const {
   handleMissingMaDMP,
   hasPermissionToDownloadNarrative,
   loadMaDMPFromDynamo,
   loadPlan,
   loadPlansForUser,
-  PlanInterface,
-  UserPlanInterface,
-} from "../dataAccess";
-import { JWTAccessToken } from "../helper";
-import { DMPToolDMPType } from "@dmptool/types";
-
-// Mock all imported functions from @dmptool/utils
-jest.mock("@dmptool/utils", () => ({
-  getSSMParameter: jest.fn(),
-  queryTable: jest.fn(),
-  getDMPs: jest.fn(),
-  createDMP: jest.fn(),
-  updateDMP: jest.fn(),
-  planToDMPCommonStandard: jest.fn(),
-  EnvironmentEnum: {
-    DEV: "dev",
-    STAGE: "stage",
-    PROD: "prod"
-  },
-  DMP_LATEST_VERSION: "latest"
-}));
+} = await import("../dataAccess.js");
 
 describe("dataAccess", () => {
   let mockLogger: Logger;
@@ -53,7 +75,7 @@ describe("dataAccess", () => {
       info: jest.fn(),
       debug: jest.fn(),
       trace: jest.fn()
-    } as undefined as Logger;
+    } as unknown as Logger;
   });
 
   afterEach(() => {
@@ -89,7 +111,7 @@ describe("dataAccess", () => {
         role: "SUPERADMIN",
         email: "admin@example.com",
         affiliationId: "aff789"
-      } as undefined as JWTAccessToken;
+      } as unknown as JWTAccessToken;
 
       const result = hasPermissionToDownloadNarrative(mockDMP, mockUserDMPs, token);
       expect(result).toBe(true);
@@ -104,7 +126,7 @@ describe("dataAccess", () => {
         role: "RESEARCHER",
         email: "user@example.com",
         affiliationId: "aff999"
-      } as undefined as JWTAccessToken;
+      } as unknown as JWTAccessToken;
 
       const result = hasPermissionToDownloadNarrative(publicDMP, [], token);
       expect(result).toBe(true);
@@ -115,7 +137,7 @@ describe("dataAccess", () => {
         role: "ADMIN",
         email: "admin@example.com",
         affiliationId: "aff123"
-      } as undefined as JWTAccessToken;
+      } as unknown as JWTAccessToken;
 
       const result = hasPermissionToDownloadNarrative(mockDMP, [], token);
       expect(result).toBe(true);
@@ -126,7 +148,7 @@ describe("dataAccess", () => {
         role: "ADMIN",
         email: "admin@example.com",
         affiliationId: "aff456"
-      } as undefined as JWTAccessToken;
+      } as unknown as JWTAccessToken;
 
       const result = hasPermissionToDownloadNarrative(mockDMP, [], token);
       expect(result).toBe(true);
@@ -137,7 +159,7 @@ describe("dataAccess", () => {
         role: "RESEARCHER",
         email: "user@example.com",
         affiliationId: "aff999"
-      } as undefined as JWTAccessToken
+      } as unknown as JWTAccessToken
 
       const result = hasPermissionToDownloadNarrative(mockDMP, mockUserDMPs, token);
       expect(result).toBe(true);
@@ -148,7 +170,7 @@ describe("dataAccess", () => {
         role: "RESEARCHER",
         email: "user@example.com",
         affiliationId: "aff999"
-      } as undefined as JWTAccessToken
+      } as unknown as JWTAccessToken
 
       const result = hasPermissionToDownloadNarrative(mockDMP, [], token);
       expect(result).toBe(false);
@@ -176,7 +198,7 @@ describe("dataAccess", () => {
         role: "ADMIN",
         email: "admin@example.com",
         affiliationId: "aff123"
-      } as undefined as JWTAccessToken;
+      } as unknown as JWTAccessToken;
 
       const result = hasPermissionToDownloadNarrative(dmpWithoutContributors, [], token);
       expect(result).toBe(true);
@@ -202,13 +224,13 @@ describe("dataAccess", () => {
       };
 
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
       (queryTable as jest.Mock).mockResolvedValue({
         results: [mockPlan],
         fields: []
-      });
+      } as never);
 
       const result = await loadPlan(mockLogger, mockDmpId, EnvironmentEnum.DEV);
 
@@ -227,13 +249,13 @@ describe("dataAccess", () => {
 
     it("should return undefined when no plan is found", async () => {
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
       (queryTable as jest.Mock).mockResolvedValue({
         results: [],
         fields: []
-      });
+      } as never);
 
       const result = await loadPlan(mockLogger, mockDmpId, EnvironmentEnum.DEV);
 
@@ -242,13 +264,13 @@ describe("dataAccess", () => {
 
     it("should return undefined when queryTable returns non-array results", async () => {
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
       (queryTable as jest.Mock).mockResolvedValue({
         results: null,
         fields: []
-      });
+      } as never);
 
       const result = await loadPlan(mockLogger, mockDmpId, EnvironmentEnum.DEV);
 
@@ -257,13 +279,13 @@ describe("dataAccess", () => {
 
     it("should use default environment when not provided", async () => {
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
       (queryTable as jest.Mock).mockResolvedValue({
         results: [],
         fields: []
-      });
+      } as never);
 
       await loadPlan(mockLogger, mockDmpId);
 
@@ -291,17 +313,36 @@ describe("dataAccess", () => {
       ];
 
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
       (queryTable as jest.Mock).mockResolvedValue({
         results: mockPlans,
         fields: []
-      });
+      } as never);
 
       const result = await loadPlan(mockLogger, mockDmpId, EnvironmentEnum.PRD);
 
       expect(result).toEqual(mockPlans[0]);
+    });
+
+    it("should return undefined and log when RDS credentials are unavailable", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce(undefined as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+
+      await expect(loadPlan(mockLogger, mockDmpId)).resolves.toBeUndefined();
+      expect(mockLogger.fatal).toHaveBeenCalledWith("Missing RdsUserName in SSM Parameter Store!");
+      expect(queryTable).not.toHaveBeenCalled();
+    });
+
+    it("should return undefined when the RDS password is unavailable", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce(undefined as never);
+
+      await expect(loadPlan(mockLogger, mockDmpId)).resolves.toBeUndefined();
+      expect(mockLogger.fatal).toHaveBeenCalledWith("Missing RdsPassword in SSM Parameter Store!");
     });
 
   })
@@ -310,7 +351,7 @@ describe("dataAccess", () => {
     const mockToken: JWTAccessToken = {
       email: "user@example.com",
       role: "RESEARCHER"
-    } as undefined as JWTAccessToken;
+    } as unknown as JWTAccessToken;
 
     beforeEach(() => {
       process.env.AWS_REGION = "us-west-2";
@@ -326,13 +367,13 @@ describe("dataAccess", () => {
       ];
 
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
       (queryTable as jest.Mock).mockResolvedValue({
         results: mockResults,
         fields: []
-      });
+      } as never);
 
       const result = await loadPlansForUser(mockLogger, mockToken, EnvironmentEnum.DEV);
 
@@ -343,13 +384,13 @@ describe("dataAccess", () => {
 
     it("should return empty array when queryTable returns non-array results", async () => {
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
       (queryTable as jest.Mock).mockResolvedValue({
         results: null,
         fields: []
-      });
+      } as never);
 
       const result = await loadPlansForUser(mockLogger, mockToken, EnvironmentEnum.DEV);
 
@@ -358,13 +399,13 @@ describe("dataAccess", () => {
 
     it("should use default environment when not provided", async () => {
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
       (queryTable as jest.Mock).mockResolvedValue({
         results: [],
         fields: []
-      });
+      } as never);
 
       await loadPlansForUser(mockLogger, mockToken);
 
@@ -373,6 +414,36 @@ describe("dataAccess", () => {
         "RdsUsername",
         EnvironmentEnum.DEV
       );
+    });
+
+    it("should return an empty array when RDS credentials are unavailable", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce(undefined as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+
+      await expect(loadPlansForUser(mockLogger, mockToken)).resolves.toEqual([]);
+      expect(mockLogger.fatal).toHaveBeenCalledWith("Missing RdsUserName in SSM Parameter Store!");
+    });
+
+    it("should return an empty array when the RDS password is unavailable", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce(undefined as never);
+
+      await expect(loadPlansForUser(mockLogger, mockToken)).resolves.toEqual([]);
+      expect(mockLogger.fatal).toHaveBeenCalledWith("Missing RdsPassword in SSM Parameter Store!");
+      expect(queryTable).not.toHaveBeenCalled();
+    });
+
+    it("queries with a blank email when the token has no email claim", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+      (queryTable as jest.Mock).mockResolvedValue({ results: [], fields: [] } as never);
+
+      await loadPlansForUser(mockLogger, { role: "RESEARCHER" } as JWTAccessToken);
+
+      expect(queryTable).toHaveBeenCalledWith(expect.any(Object), expect.any(String), [""]);
     });
   });
 
@@ -387,10 +458,13 @@ describe("dataAccess", () => {
 
     it("should load maDMP from DynamoDB successfully", async () => {
       const mockDMP: DMPToolDMPType = {
-        dmp: {dmp_id: {identifier: dmpId}}
+        dmp: {
+          dmp_id: {identifier: dmpId},
+          narrative: {},
+        }
       } as DMPToolDMPType;
 
-      (getDMPs as jest.Mock).mockResolvedValue([mockDMP]);
+      (getDMPs as jest.Mock).mockResolvedValue([mockDMP] as never);
 
       const result = await loadMaDMPFromDynamo(mockLogger, domainName, dmpId);
 
@@ -408,7 +482,7 @@ describe("dataAccess", () => {
     });
 
     it("should return undefined when no DMPs found", async () => {
-      (getDMPs as jest.Mock).mockResolvedValue([]);
+      (getDMPs as jest.Mock).mockResolvedValue([] as never);
 
       const result = await loadMaDMPFromDynamo(mockLogger, domainName, dmpId);
 
@@ -416,11 +490,44 @@ describe("dataAccess", () => {
     });
 
     it("should return undefined when getDMPs returns non-array", async () => {
-      (getDMPs as jest.Mock).mockResolvedValue(null);
+      (getDMPs as jest.Mock).mockResolvedValue(null as never);
 
       const result = await loadMaDMPFromDynamo(mockLogger, domainName, dmpId);
 
       expect(result).toBeUndefined();
+    });
+
+    it("uses local default connection settings when environment variables are absent", async () => {
+      delete process.env.AWS_REGION;
+      delete process.env.DYNAMODB_TABLE_NAME;
+      delete process.env.DYNAMODB_ENDPOINT;
+      delete process.env.MAX_ATTEMPTS;
+      delete process.env.RDS_HOST;
+      delete process.env.RDS_PORT;
+      delete process.env.RDS_DATABASE;
+      delete process.env.SSM_ENDPOINT;
+
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+      (queryTable as jest.Mock).mockResolvedValue({ results: [], fields: [] } as never);
+      (getDMPs as jest.Mock).mockResolvedValue([] as never);
+
+      await loadPlan(mockLogger, dmpId);
+      await loadMaDMPFromDynamo(mockLogger, domainName, dmpId);
+
+      expect(queryTable).toHaveBeenCalledWith(
+        expect.objectContaining({ host: "localhost", port: 3306, database: "dmp" }),
+        expect.any(String),
+        [dmpId],
+      );
+      expect(getDMPs).toHaveBeenCalledWith(
+        expect.objectContaining({ region: "us-west-2", tableName: "dynamo-table", maxAttempts: 3 }),
+        domainName,
+        dmpId,
+        DMP_LATEST_VERSION,
+        true,
+      );
     });
   });
 
@@ -448,11 +555,11 @@ describe("dataAccess", () => {
       } as DMPToolDMPType;
 
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
-      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(mockMaDMP);
-      (createDMP as jest.Mock).mockResolvedValue(undefined);
+      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(mockMaDMP as never);
+      (createDMP as jest.Mock).mockResolvedValue(undefined as never);
 
       const result = await handleMissingMaDMP(
         mockLogger,
@@ -492,11 +599,11 @@ describe("dataAccess", () => {
       } as DMPToolDMPType;
 
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
-      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(mockMaDMP);
-      (updateDMP as jest.Mock).mockResolvedValue(undefined);
+      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(mockMaDMP as never);
+      (updateDMP as jest.Mock).mockResolvedValue(undefined as never);
 
       const result = await handleMissingMaDMP(
         mockLogger,
@@ -522,13 +629,13 @@ describe("dataAccess", () => {
     });
 
     it("should not persist when maDMP has no dmp property", async () => {
-      const mockMaDMP: DMPToolDMPType = undefined;
+      const mockMaDMP: DMPToolDMPType | undefined = undefined;
 
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
-      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(mockMaDMP);
+      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(mockMaDMP as never);
 
       const result = await handleMissingMaDMP(
         mockLogger,
@@ -546,10 +653,10 @@ describe("dataAccess", () => {
 
     it("should return maDMP when planToDMPCommonStandard returns undefined", async () => {
       (getSSMParameter as jest.Mock)
-        .mockResolvedValueOnce("rdsUser")
-        .mockResolvedValueOnce("rdsPassword");
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
 
-      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(undefined);
+      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(undefined as never);
 
       const result = await handleMissingMaDMP(
         mockLogger,
@@ -562,6 +669,25 @@ describe("dataAccess", () => {
 
       expect(result).toBeUndefined();
       expect(createDMP).not.toHaveBeenCalled();
+    });
+
+    it("should not persist maDMP records without a dmp property", async () => {
+      const incompleteMaDMP = {} as DMPToolDMPType;
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+      (planToDMPCommonStandard as jest.Mock).mockResolvedValue(incompleteMaDMP as never);
+
+      await expect(handleMissingMaDMP(
+        mockLogger,
+        EnvironmentEnum.DEV,
+        applicationName,
+        domainName,
+        mockPlan,
+        false
+      )).resolves.toEqual(incompleteMaDMP);
+      expect(createDMP).not.toHaveBeenCalled();
+      expect(updateDMP).not.toHaveBeenCalled();
     });
   });
 });

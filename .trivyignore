@@ -1,0 +1,6 @@
+# image-size DoS vulnerabilities — no fixed version available as of Aug 2026
+# Used via @turbodocx/html-to-docx. Not exploitable in our narrative pipeline
+# since we don't process user-uploaded ICNS/HEIF/JXL images.
+# Revisit: https://github.com/advisories/GHSA-w3rx-r6r6-pgpr
+CVE-2025-71329
+CVE-2025-71330

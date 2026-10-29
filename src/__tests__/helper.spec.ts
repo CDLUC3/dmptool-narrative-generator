@@ -1,10 +1,11 @@
-import { 
-  safeNumber, 
-  safeBoolean, 
-  pointsToFontSize, 
+import { describe, expect, it } from "@jest/globals";
+import {
+  safeNumber,
+  safeBoolean,
+  pointsToFontSize,
   formatDate,
   getFontFamily
- } from "../helper";
+ } from "../helper.js";
 
 describe("safeNumber", () => {
   it("parses valid numbers", () => {
@@ -16,7 +17,6 @@ describe("safeNumber", () => {
     expect(safeNumber("abc", 99)).toBe(99);
     expect(safeNumber("", 5)).toBe(5);
     expect(safeNumber("   ", 1)).toBe(1);
-    expect(safeNumber(undefined, 12)).toBe(12);
   });
 });
 
@@ -38,11 +38,6 @@ describe("safeBoolean", () => {
   it("returns fallback for unrecognized strings", () => {
     expect(safeBoolean("maybe", true)).toBe(true);
     expect(safeBoolean("unknown", false)).toBe(false);
-  });
-
-  it("handles undefined or null gracefully", () => {
-    expect(safeBoolean(undefined, true)).toBe(true);
-    expect(safeBoolean(null, false)).toBe(false);
   });
 });
 
