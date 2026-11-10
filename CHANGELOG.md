@@ -20,6 +20,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Fixed out of sync package-lock for html-sanitizer
 - Updated eslint dependencies
 - Updated `@dmptool/utils` to `v2.2.3`
 - Fixed a bug with the token revocation check URL in `auth.ts`
