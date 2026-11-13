@@ -1,10 +1,10 @@
 # Build specifications for AWS CodeBuild
 #   See: https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
+#
+# This buildspec has been adapted for use by dmptool-autodeploy
+#   See: https://github.com/CDLUC3/dmptool-autodeploy/blob/main/docs/auto_build_workflow_diagram.md
 
-# Each input artifact is extracted to its own directory by CodePipeline, the locations of which
-# are stored in environment variables. The directory for the primary source artifact (this repo)
-# is made available with $CODEBUILD_SRC_DIR. The directory for the DMPTool push artifacts is
-# made available with $CODEBUILD_SRC_DIR_dmptool-commit.
+
 # Do not change version. This is the version of aws buildspec, not the version of your buldspec file.
 version: 0.2
 
@@ -14,20 +14,86 @@ phases:
       nodejs: 22
   pre_build:
     commands:
-      # Set some ENV variables here because CF only allows a limit of 1000 characters in the
-      # EnvironmentVariable config for the Pipeline action :(
-      - export AWS_VERSION=$(aws --version)
+      - echo "Supplied Vars"
+      - echo "AWS_REGION - ${AWS_REGION}"
+      - echo "ECR_REGISTRY - ${ECR_REGISTRY}"
+      - echo "ECR_REPOSITORY_NAME - ${ECR_REPOSITORY_NAME}"
+      - echo "TASKDEF_IMAGETAG=${TASKDEF_IMAGETAG}"
+      - echo "SCHEDULED_BUILD=${SCHEDULED_BUILD}"
+      - echo "SSM_PATH=${SSM_PATH}"
+      # for debugging:
+      #- echo "Full Environment"
+      #- env | sort
 
-      # Fetch the ECR repository name
-      - echo $ECR_REPOSITORY_URI >> .ecr
-      - export SHORT_ECR_URI=$(awk '{gsub("$ECR_REPOSITORY_NAME", "");print}' .ecr)
-      - rm .ecr
+      # set up ECR credentials
+      - echo Log in to Amazon ECR ...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-      # Set the repository URI to your ECR image and add an image tag with the first seven characters of the Git
-      # commit ID of the source.
-      - echo Logging in to Amazon ECR ...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $SHORT_ECR_URI
-      - IMAGE_TAG=${COMMIT_HASH:=narrative-generator-latest}
+      # Check if this in an initial build.
+      #
+      # Query ECR repo for an image with the TASKDEF_IMAGETAG.
+      # If not, set INITIAL_BUILD to true.
+      # This is used post_build to push a TASKDEF_IMAGETAG tag the repo.
+      - |
+        aws ecr describe-images \
+          --repository-name ${ECR_REPOSITORY_NAME} \
+          --image-ids imageTag=${TASKDEF_IMAGETAG} \
+          2>&1 > /dev/null && INITIAL_BUILD="false" || INITIAL_BUILD="true"
+      - echo "INITIAL_BUILD=$INITIAL_BUILD"
+
+      # Check if this is a scheduled build.
+      #
+      # In a scheduled build, codepipeline sources a default branch.
+      # We obtain the semantic version for the current deployed application from
+      # our deployment manifest in SSM ParameterStore at $SSM_PATH.
+      # We then check out that tag and proceed to build as usual.
+      - |
+        if [ -n "$SCHEDULED_BUILD" -a "$SCHEDULED_BUILD" == "true" ]; then
+          echo 'This is a scheduled build'
+          echo 'Get our "DEPLOYED_RELEASE" from deployment manifest'
+          DEPLOYED_RELEASE=$(aws --output text ssm get-parameter --name $SSM_PATH --query Parameter.Value)
+          echo "DEPLOYED_RELEASE=$DEPLOYED_RELEASE"
+          echo "checkout $DEPLOYED_RELEASE as a git tag"
+          git checkout $DEPLOYED_RELEASE
+          if [ "$?" != "0" ]; then
+            echo "Attempt to run git checkout $DEPLOYED_RELEASE failed. Exiting!"
+            exit 1
+          fi
+        fi
+
+
+      # Generate image tags
+      #
+      # get the first 7 chars of commit id provide by codebuild
+      - COMMIT=$(git rev-parse --short HEAD)
+      # Get release or semantic version tags for commit
+      # HINT: validate the egrep regex matches your tagging convention.
+      - RELEASE_TAG=$(git tag --points-at $COMMIT | egrep "^[0-9]+\.[0-9]+\.[0-9]+$" || echo '')
+      - SEMVER_TAG=$(git tag --points-at $COMMIT | egrep "^[0-9]+\.[0-9]+\.[0-9]_\w+$" || echo '')
+      # Get any other tags for commit
+      - OTHER_TAG=$(git tag --points-at $COMMIT | egrep -v "^[0-9]+\.[0-9]+\.[0-9]+" || echo '')
+      - |
+        if [ -n "$RELEASE_TAG" ]; then
+            IMAGE_TAG=$RELEASE_TAG
+        elif [ -n "$SEMVER_TAG" ]; then
+            IMAGE_TAG=$SEMVER_TAG
+        elif [ -n "$OTHER_TAG" ]; then
+            IMAGE_TAG=$OTHER_TAG
+        else
+            IMAGE_TAG=$COMMIT
+        fi
+      - BUILD_DATE=$(TZ='America/Los_Angeles' date +"%Y%m%d.%H.%M.%S")
+
+      # debug tags
+      - echo "COMMIT=$COMMIT"
+      - echo "RELEASE_TAG=$RELEASE_TAG"
+      - echo "SEMVER_TAG=$SEMVER_TAG"
+      - echo "OTHER_TAG=$OTHER_TAG"
+      - echo "IMAGE_TAG=$IMAGE_TAG"
+      - echo "BUILD_DATE=$BUILD_DATE"
+      - echo "INITIAL_BUILD=$INITIAL_BUILD"
+
+
   build:
     commands:
       - echo "Running in ${NODE_ENV} - started on `date`"
@@ -52,23 +118,34 @@ phases:
       - echo "Running tests"
       - npm run test
 
-
       # Build the Docker image
       - echo Building the Docker image...
-      - docker build -f Dockerfile.aws -t $SHORT_ECR_URI:narrative-gen-latest .
-      - docker tag $ECR_REPOSITORY_URI:narrative-gen-latest $SHORT_ECR_URI:$IMAGE_TAG
+      - DOCKERFILE=Dockerfile.aws
+      - docker buildx build --platform linux/amd64 -f $DOCKERFILE -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
+
+
   post_build:
     commands:
       # Push the Docker image to the ECR repository.
       - echo Build completed on `date`
       - echo Pushing the Docker images...
       - cd $CODEBUILD_SRC_DIR
-      - docker push $SHORT_ECR_URI:narrative-gen-latest
-      - docker push $SHORT_ECR_URI:$IMAGE_TAG
+      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
+      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
+      - |
+        if [ "$INITIAL_BUILD" == "true" ]; then 
+          echo "This is and initial build.  Pushing ${TASKDEF_IMAGETAG} tag also."
+          docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
+          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
+        fi
 
-      - echo Writing image definitions file...
-      - printf '[{"name":"%s","imageUri":"%s"}]' $TASK_DEFINITION_CONTAINER_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-
-artifacts:
-  # The Deploy step is expecting this name
-  files: imagedefinitions.json
+# Obsolete - we no longer deploy as part of codepipeline run
+#
+#      - echo Writing image definitions file...
+#      - printf '[{"name":"%s","imageUri":"%s"}]' $TASK_DEFINITION_CONTAINER_NAME $ECR_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+#
+#artifacts:
+#  # The Deploy step is expecting this name
+#  files: imagedefinitions.json
