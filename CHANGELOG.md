@@ -1,6 +1,10 @@
 # dmptool-narrative-generator
 
 ## Added
+- Added `GET /templates/:versionedTemplateId/narrative{.:ext}` to download a blank published Template as a PDF or DOCX for the Funder Requirements page (any other format returns a 406). No authentication is required, but only the current published version of a public (or default) Template can be downloaded. Requires `@dmptool/utils` v2.3.0 [#633]
+- Added `loadTemplate` and `isTemplateDownloadable` to `dataAccess`
+- Added `templateHtml.ts` to render a Template as HTML, following the layout of the old DMP Tool template export (owner and title, sections, then the question text, options, requirements, example/default answer and guidance for each question)
+- Template downloads include the full question text (with "(required)" at the end of required questions), the answer options for option based questions, the requirements, example/default answer and guidance, and for Research Output questions the list of selected fields using the labels plan writers see
 - Added logic to sanitize HTML
 - Added `apt-get upgrade` to Dockerfiles so that we get latest updates for all package
 - Added additional unit tests
@@ -20,6 +24,7 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Moved the format detection (file extension or `Accept` header) in `server.ts` into a `determineAccept` helper, and the `LOG_LEVEL`/`ENV` parsing into a `loadEnvSettings` helper that both the DMP and Template routes use
 - Fixed out of sync package-lock for html-sanitizer
 - Updated eslint dependencies
 - Updated `@dmptool/utils` to `v2.2.3`
@@ -53,6 +58,7 @@
 - Updated the `glob` and `js-yaml` dependencies
 
 ## Fixed
+- Removed an `it.only` in `server.spec.ts` that was skipping 20 of the `server` tests
 - Added override for `js-yaml` (`^4.1.1`) under `@istanbuljs/load-nyc-config` to remove the vulnerable `argparse@1`/`sprintf-js` dependency chain from `jest`/`ts-jest`. High vulnerability in `handlebars` was addressed by updating to `v4.7.10` via `npm audit fix` [#470]
 - Fixed `hasPermissionToDownloadNarrative` to allow users to download their own plan even if its not yet published
 

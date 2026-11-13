@@ -11,6 +11,13 @@ A narrative for any `public` DMP can be generated without an authentication cook
 
 The service can also respond to health checks on `/narrative-health`
 
+### Templates (Funder Requirements)
+The service can also generate a blank Template (the sections and questions, with their requirements, example/default answers and guidance, but no answers). This is used by the Funder Requirements page.
+- **PATH**: `GET templates/{:versionedTemplateId}/narrative.pdf` or `GET templates/{:versionedTemplateId}/narrative.docx`
+- **FORMATS**: `pdf` and `docx` only. Any other extension returns a 406. Without an extension a PDF is returned, unless the `Accept` header asks for a DOCX
+- No authentication is required, but only the current (`active`) `PUBLISHED` version of a `PUBLIC` (or default) Template can be downloaded. All others return a 404
+- The Font and Margin query parameters below are supported (the Display ones are not)
+
 ## Table of Contents
 - [Supported Formats](#supported-formats)
 - [Query parameters](#query-parameters)

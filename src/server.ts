@@ -9,6 +9,7 @@ import { renderHTML } from "./html.js";
 import { renderPDF } from "./pdf.js";
 import { renderDOCX } from "./docx.js";
 import { renderTXT } from "./txt.js";
+import { renderTemplateHTML, templateTitle } from "./templateHtml.js";
 import {
   safeNumber,
   safeBoolean,
@@ -22,14 +23,17 @@ import {
   EnvironmentEnum,
   initializeLogger,
   LogLevelEnum,
+  type TemplateNarrative,
   toErrorMessage,
 } from "@dmptool/utils";
 import {
   handleMissingMaDMP,
   hasPermissionToDownloadNarrative,
+  isTemplateDownloadable,
   loadMaDMPFromDynamo,
   loadPlan,
   loadPlansForUser,
+  loadTemplate,
   type PlanInterface,
   type UserPlanInterface
 } from "./dataAccess.js";
@@ -109,6 +113,35 @@ function processAccept(accept: string): string[] {
   return rawTypes.split(",");
 }
 
+// ----------------- Determine the requested format  -----------------
+// Get the format the user wants the document in from either the specified
+// file extension OR the Accept header
+function determineAccept(req: Request): string {
+  // Handle both string and array cases for req.params.ext
+  const extValue = Array.isArray(req.params.ext) ? req.params.ext[0] : req.params.ext;
+  if (extValue && extValue.length > 0) {
+    switch (extValue.toLowerCase()) {
+      case "csv": return CSV_TYPE;
+      case "docx": return DOCX_TYPE;
+      case "json": return JSON_TYPE;
+      case "pdf": return PDF_TYPE;
+      case "txt": return TXT_TYPE;
+      default: return HTML_TYPE;
+    }
+  }
+  return req.headers["accept"] || HTML_TYPE;
+}
+
+// ----------------- Process the environment variables  -----------------
+function loadEnvSettings(): { logLevel: LogLevelEnum, env: EnvironmentEnum } {
+  const rawLogLevel: string = process.env.LOG_LEVEL ? process.env.LOG_LEVEL.toUpperCase() : 'INFO';
+  const rawEnv: string = process.env.ENV ? process.env.ENV.toUpperCase() : 'DEV';
+  return {
+    logLevel: LogLevelEnum[rawLogLevel as keyof typeof LogLevelEnum] || LogLevelEnum.INFO,
+    env: EnvironmentEnum[rawEnv as keyof typeof EnvironmentEnum] || EnvironmentEnum.DEV,
+  };
+}
+
 // ----------------- Verify required env variables ----------
 const requiredEnvVars = [
   "APPLICATION_NAME",
@@ -135,33 +168,15 @@ app.use(cookieParser());
 //   /dmps/11.11111/A1B2C3/narrative
 //   /dmps/doi.org/11.12345/JHHG5646jhvh/narrative
 app.get("/dmps/{*splat}/narrative{.:ext}", requireAuth, async (req: Request, res: Response) => {
-  const rawLogLevel: string = process.env.LOG_LEVEL ? process.env.LOG_LEVEL.toUpperCase() : 'INFO';
-  const rawEnv: string = process.env.ENV ? process.env.ENV.toUpperCase() : 'DEV';
   // Process the environment variables
-  const logLevel: LogLevelEnum = LogLevelEnum[rawLogLevel as keyof typeof LogLevelEnum] || LogLevelEnum.INFO;
-  const env: EnvironmentEnum = EnvironmentEnum[rawEnv as keyof typeof EnvironmentEnum] || EnvironmentEnum.DEV;
+  const { logLevel, env } = loadEnvSettings();
   const domainName = process.env.DOMAIN_NAME || "localhost:3000";
   const applicationName = process.env.APPLICATION_NAME || "My app";
   const ezidBaseURL = process.env.EZID_BASE_URL || 'https://doi.org/';
 
   // Get the format the user wants the narrative document in from either
   // the specified file extension OR the Accept header
-  let accept: string;
-
-  // Handle both string and array cases for req.params.ext
-  const extValue = Array.isArray(req.params.ext) ? req.params.ext[0] : req.params.ext;
-    if (extValue && extValue.length > 0) {
-      switch (extValue.toLowerCase()) {
-      case "csv": accept = CSV_TYPE; break;
-      case "docx": accept = DOCX_TYPE; break;
-      case "json": accept = JSON_TYPE; break;
-      case "pdf": accept = PDF_TYPE; break;
-      case "txt": accept = TXT_TYPE; break;
-      default: accept = HTML_TYPE;
-    }
-  } else {
-    accept = req.headers["accept"] || HTML_TYPE;
-  }
+  const accept: string = determineAccept(req);
 
   // Get the query params or use defaults
   const { version, display, margin, font } = prepareOptions(req.query);
@@ -332,6 +347,96 @@ app.get("/dmps/{*splat}/narrative{.:ext}", requireAuth, async (req: Request, res
     res.status(500)
       .send("Document generation failed");
     return;
+  }
+});
+
+// ----------------- Entrypoint to fetch a published Template  -----------------
+// Used by the Funder Requirements page to download a blank Template (the sections and
+// questions without any answers) as a PDF or DOCX. No authentication is required, but
+// only the current published version of a public Template can be downloaded.
+// Matches patterns like:
+//   /templates/123/narrative       (PDF unless the Accept header asks for DOCX)
+//   /templates/123/narrative.pdf
+//   /templates/123/narrative.docx
+const TEMPLATE_FORMATS_MESSAGE = "Not Acceptable: Supported formats are PDF and DOCX";
+
+// Determine whether the caller wants a PDF or DOCX. Returns undefined if they asked
+// for any other format.
+function determineTemplateFormat(req: Request): string | undefined {
+  const extValue = Array.isArray(req.params.ext) ? req.params.ext[0] : req.params.ext;
+  if (extValue && extValue.length > 0) {
+    switch (extValue.toLowerCase()) {
+      case "pdf": return PDF_TYPE;
+      case "docx": return DOCX_TYPE;
+      default: return undefined;
+    }
+  }
+  // No extension so default to PDF (e.g. a browser link sends "text/html")
+  // unless the Accept header specifically asks for a DOCX
+  return processAccept(req.headers["accept"] || "").includes(DOCX_TYPE) ? DOCX_TYPE : PDF_TYPE;
+}
+
+app.get("/templates/:versionedTemplateId/narrative{.:ext}", async (req: Request, res: Response) => {
+  const { logLevel, env } = loadEnvSettings();
+  const { margin, font } = prepareOptions(req.query);
+  const requestLogger: Logger = initializeLogger('narrative-generator', logLevel);
+
+  const rawId = Array.isArray(req.params.versionedTemplateId)
+    ? req.params.versionedTemplateId[0]
+    : req.params.versionedTemplateId;
+  if (!rawId || !/^\d+$/.test(rawId)) {
+    res.status(400).send("Invalid request");
+    return;
+  }
+  const versionedTemplateId = Number(rawId);
+
+  // Reject unsupported formats before going to the database
+  const format: string | undefined = determineTemplateFormat(req);
+  if (!format) {
+    requestLogger.debug({ versionedTemplateId, ext: req.params.ext }, "Unsupported Template format requested");
+    res.status(406).send(TEMPLATE_FORMATS_MESSAGE);
+    return;
+  }
+
+  requestLogger.debug(
+    { versionedTemplateId, format, margin, font },
+    'Received request for Template narrative'
+  );
+
+  try {
+    const template: TemplateNarrative | undefined = await loadTemplate(requestLogger, versionedTemplateId, env);
+    if (!isTemplateDownloadable(template) || !template) {
+      requestLogger.warn({ versionedTemplateId }, "No published Template found");
+      // We return 404 here so that we're not signaling which Template ids are valid
+      res.status(404).send("Template not found");
+      return;
+    }
+
+    // Matches the file names from the old DMP Tool (e.g. NSF_Polar_Programs_v2). Versions are
+    // stored with the "v" prefix (e.g. "v2") so remove it before adding our own
+    const baseName = template.title.replace(/[^a-zA-Z\d\s]/g, "").trim().replace(/\s+/g, "_") || "template";
+    const version = String(template.version ?? "").replace(/^v/i, "").replace(/[^\w.-]/g, "");
+    const fileName = version ? `${baseName}_v${version}` : baseName;
+    const html = renderTemplateHTML(margin, font, template);
+
+    if (format === DOCX_TYPE) {
+      const docx = await renderDOCX(requestLogger, templateTitle(template), html, margin, font);
+      requestLogger.debug({ versionedTemplateId }, "Generating Template DOCX");
+      res.setHeader("Content-Type", DOCX_TYPE);
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}.docx"`);
+      res.send(docx);
+      return;
+    }
+
+    const pdf = await renderPDF(html);
+    requestLogger.debug({ versionedTemplateId }, "Generating Template PDF");
+    res.setHeader("Content-Type", PDF_TYPE);
+    res.setHeader("Content-Disposition", `inline; filename="${fileName}.pdf"`);
+    res.send(pdf);
+  } catch (e) {
+    requestLogger.fatal({ versionedTemplateId, err: e }, toErrorMessage(e));
+    res.status(500)
+      .send("Document generation failed");
   }
 });
 

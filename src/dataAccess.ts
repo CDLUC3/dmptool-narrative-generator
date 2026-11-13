@@ -6,9 +6,11 @@ import {
   EnvironmentEnum,
   getDMPs,
   getSSMParameter,
+  loadTemplateNarrative,
   planToDMPCommonStandard,
   queryTable,
   type SsmConnectionParams,
+  type TemplateNarrative,
   updateDMP
 } from "@dmptool/utils";
 import type { JWTAccessToken } from "./helper.js";
@@ -217,6 +219,49 @@ export async function loadPlan(
     [dmpId]
   );
   return Array.isArray(plans.results) ? plans.results[0] : undefined;
+}
+
+/**
+ * Determines if anyone (signed in or not) can download the Template. Only the current
+ * published version of a public Template (or the default Template) can be downloaded.
+ * This matches the Templates listed on the Funder Requirements page.
+ *
+ * @param template The Template to check
+ * @returns true if the Template can be downloaded
+ */
+export function isTemplateDownloadable(template: TemplateNarrative | undefined): boolean {
+  if (!template) return false;
+
+  return template.active
+    && template.versionType?.toUpperCase() === "PUBLISHED"
+    && (template.visibility?.toUpperCase() === "PUBLIC" || template.isDefault);
+}
+
+/**
+ * Load a published (versioned) Template with all of its sections and questions from RDS.
+ *
+ * @param logger the logger to use for logging
+ * @param versionedTemplateId the versionedTemplates.id to load
+ * @param env the environment to use for fetching parameters from SSM
+ * @returns the Template narrative, or undefined if it could not be found
+ */
+export async function loadTemplate(
+  logger: Logger,
+  versionedTemplateId: number,
+  env: EnvironmentEnum = EnvironmentEnum.DEV
+): Promise<TemplateNarrative | undefined> {
+  const ssmConfig: SsmConnectionParams | undefined = await getSSMConfig(logger);
+  if (!ssmConfig) {
+    logger.fatal('Missing SSM configuration config!');
+    return undefined;
+  }
+  const rdsConfig: ConnectionParams | undefined = await getRDSConfig(ssmConfig, env);
+  if (!rdsConfig) {
+    logger.fatal('Missing RDS configuration config!');
+    return undefined;
+  }
+
+  return await loadTemplateNarrative(rdsConfig, versionedTemplateId);
 }
 
 /**
