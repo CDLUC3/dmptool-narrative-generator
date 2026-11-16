@@ -21,7 +21,9 @@ RUN rm -rf dist/__tests__ \
 # Stage 2: Production Image
 FROM public.ecr.aws/docker/library/node:lts-slim AS runner
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# To pick up updates to other packages that are not listed, we use apt-get upgrade.
+# This is a security best practice to ensure that all packages are up to date.
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     bash \
     curl \
     nodejs \

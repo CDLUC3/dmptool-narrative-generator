@@ -3,7 +3,7 @@ FROM public.ecr.aws/docker/library/node:lts-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     bash \
     curl \
     nodejs \
