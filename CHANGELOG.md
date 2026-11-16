@@ -20,6 +20,8 @@
 - Added this `CHANGELOG.md`, `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` files
 
 ## Updated
+- Removed old overrides from `package.json`
+- Ran `npm audit fix` to fix some vulnerabilities
 - Updated `@dmptool/utils` to `v2.2.3`
 - Fixed a bug with the token revocation check URL in `auth.ts`
 - Updated `package-lock.json` with new version of `@dmptool/utils` [#388]
