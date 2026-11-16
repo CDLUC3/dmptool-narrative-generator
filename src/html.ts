@@ -1,7 +1,6 @@
 import Handlebars from "handlebars";
 import pluralize from "pluralize-esm";
-import sanitizeHtml from "sanitize-html";
-import { formatDate } from "./helper.js";
+import { formatDate, sanitizeHTML } from "./helper.js";
 import type {
   DisplayOptionsInterface,
   FontInterface,
@@ -253,11 +252,7 @@ function answerToHTML(json: AnyAnswerType): string {
     out += `<div class="answer-comment"><strong>Comment:</strong> ${json.comment}</div>`;
   }
 
-  return sanitizeHtml(out, {
-    allowedSchemesByTag: {
-      a: ["http", "https", "mailto"],
-    },
-  });
+  return sanitizeHTML(out);
 }
 
 /**

@@ -1,42 +1,16 @@
-import sanitizeHtml from "sanitize-html";
+import { DefaultResearchOutputTableQuestion } from "@dmptool/types";
 import type {
   TemplateNarrative,
   TemplateNarrativeQuestion,
   TemplateNarrativeSection,
 } from "@dmptool/utils";
+import { escapeHTML, sanitizeHTML } from "./helper.js";
 import type { FontInterface, MarginInterface } from "./server.js";
 
 interface QuestionOption {
   label?: string;
   value?: string;
   selected?: boolean;
-}
-
-/**
- * Escape plain text (e.g. titles and option labels) for use in HTML.
- */
-export function escapeHTML(text: string | undefined | null): string {
-  if (text === undefined || text === null) return "";
-
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-/**
- * Sanitize rich text (e.g. question text, guidance and sample text) for use in HTML.
- */
-function sanitize(html: string | undefined | null): string {
-  if (html === undefined || html === null) return "";
-
-  return sanitizeHtml(String(html).trim(), {
-    allowedSchemesByTag: {
-      a: ["http", "https", "mailto"],
-    },
-  });
 }
 
 /**
@@ -63,7 +37,7 @@ function annotationToHTML(label: string, text: string | undefined, cssClass: str
   return `
     <div class="annotation ${cssClass}">
       <p class="annotation-label"><em>${escapeHTML(label)}</em>:</p>
-      <div class="annotation-text">${sanitize(text)}</div>
+      <div class="annotation-text">${sanitizeHTML(text)}</div>
     </div>`;
 }
 
@@ -105,20 +79,13 @@ export const RESEARCH_OUTPUT_FIELD_LABELS: Record<string, string> = {
 };
 
 // The default headings for the Research Output fields (keyed by the commonStandardId) for the
-// rare case where a field has neither a translation nor a heading
-const RESEARCH_OUTPUT_DEFAULT_HEADINGS: Record<string, string> = {
-  title: "Title",
-  description: "Description",
-  type: "Type",
-  data_flags: "Data Flags",
-  data_access: "Access Level",
-  issued: "Anticipated Release Date",
-  byte_size: "Byte Size",
-  host: "Repository(ies)",
-  metadata: "Metadata Standard(s)",
-  license_ref: "License",
-  custom: "Custom Column",
-};
+// rare case where a field has neither a translation nor a heading. These come from the default
+// Research Output Table question in @dmptool/types so they stay in sync with the template builder.
+const RESEARCH_OUTPUT_DEFAULT_HEADINGS: Record<string, string> = Object.fromEntries(
+  DefaultResearchOutputTableQuestion.columns.map(
+    (column: { commonStandardId: string; heading: string }) => [column.commonStandardId, column.heading]
+  )
+);
 
 /**
  * The label a plan writer sees for a Research Output field
@@ -175,7 +142,7 @@ function addRequiredMarker(html: string): string {
  */
 function questionToHTML(question: TemplateNarrativeQuestion): string {
   const sampleLabel = question.useSampleTextAsDefault ? "Default Answer" : "Example Answer";
-  const text = sanitize(question.text);
+  const text = sanitizeHTML(question.text);
 
   return `
     <div class="question">
@@ -195,7 +162,7 @@ function questionToHTML(question: TemplateNarrativeQuestion): string {
  */
 function sectionToHTML(section: TemplateNarrativeSection): string {
   const introduction = section.introduction
-    ? `<div class="section-introduction">${sanitize(section.introduction)}</div>`
+    ? `<div class="section-introduction">${sanitizeHTML(section.introduction)}</div>`
     : "";
   const questions = Array.isArray(section.question)
     ? section.question.map(questionToHTML).join("")

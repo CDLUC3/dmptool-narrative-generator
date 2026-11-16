@@ -1,4 +1,5 @@
 import type { JwtPayload } from "jsonwebtoken";
+import sanitizeHtml from "sanitize-html";
 
 /**
  * The JSON web token structure
@@ -111,4 +112,38 @@ export function getFontFamily(fontParam: string): string {
   } else {
     return availableFonts['tinos'];
   }
+}
+
+/**
+ * Escape plain text (e.g. titles and option labels) for use in HTML
+ *
+ * @param text The text to escape
+ * @returns The escaped text, or an empty string if there is no text
+ */
+export function escapeHTML(text: string | undefined | null): string {
+  if (text === undefined || text === null) return "";
+
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Sanitize rich text (e.g. answers, question text and guidance) for use in HTML. Removes
+ * unsafe tags and attributes and only allows http, https and mailto links.
+ *
+ * @param html The HTML to sanitize
+ * @returns The sanitized HTML, or an empty string if there is no HTML
+ */
+export function sanitizeHTML(html: string | undefined | null): string {
+  if (html === undefined || html === null) return "";
+
+  return sanitizeHtml(String(html).trim(), {
+    allowedSchemesByTag: {
+      a: ["http", "https", "mailto"],
+    },
+  });
 }

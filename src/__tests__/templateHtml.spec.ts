@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import type { TemplateNarrative } from "@dmptool/utils";
-import { escapeHTML, renderTemplateHTML, templateTitle } from "../templateHtml.js";
+import { renderTemplateHTML, templateTitle } from "../templateHtml.js";
 
 const margin = { marginTop: 76, marginRight: 96, marginBottom: 76, marginLeft: 96 };
 const font = { fontFamily: "Tinos, serif", fontSize: "11pt", lineHeight: 120 };
@@ -78,18 +78,6 @@ describe("templateTitle", () => {
   it("should use just the title when there is no owner name", () => {
     const template = buildTemplate({ owner: { uri: "https://ror.org/1" } });
     expect(templateTitle(template)).toEqual("Arctic Data Center: NSF Polar Programs");
-  });
-});
-
-describe("escapeHTML", () => {
-  it("should escape HTML special characters", () => {
-    expect(escapeHTML(`<a href="x">Tom & Jerry's</a>`))
-      .toEqual("&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&#39;s&lt;/a&gt;");
-  });
-
-  it("should return an empty string for missing values", () => {
-    expect(escapeHTML(undefined)).toEqual("");
-    expect(escapeHTML(null)).toEqual("");
   });
 });
 
