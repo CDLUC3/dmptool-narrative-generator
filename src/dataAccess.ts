@@ -224,7 +224,6 @@ export async function loadPlan(
 /**
  * Determines if anyone (signed in or not) can download the Template. Only the current
  * published version of a public Template (or the default Template) can be downloaded.
- * This matches the Templates listed on the Funder Requirements page.
  *
  * @param template The Template to check
  * @returns true if the Template can be downloaded

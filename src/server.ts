@@ -91,7 +91,7 @@ function prepareOptions(params: any): OptionsInterface {
       includeResearchOutputs: safeBoolean(params?.includeResearchOutputs as string, true) || true,
       includeRelatedWorks: safeBoolean(params?.includeRelatedWorks as string, true) || true,
     },
-    margin : {
+    margin: {
       marginTop: safeNumber(params?.marginTop as string, 76),
       marginRight: safeNumber(params?.marginRight as string, 96),
       marginBottom: safeNumber(params?.marginBottom as string, 76),
@@ -412,8 +412,8 @@ app.get("/templates/:versionedTemplateId/narrative{.:ext}", async (req: Request,
       return;
     }
 
-    // Matches the file names from the old DMP Tool (e.g. NSF_Polar_Programs_v2). Versions are
-    // stored with the "v" prefix (e.g. "v2") so remove it before adding our own
+    // Build the download file name from the title and version (e.g. "NSF_Polar_Programs_v2").
+    // Versions are stored with a "v" prefix (e.g. "v2"), so strip it to avoid "vv2"
     const baseName = template.title.replace(/[^a-zA-Z\d\s]/g, "").trim().replace(/\s+/g, "_") || "template";
     const version = String(template.version ?? "").replace(/^v/i, "").replace(/[^\w.-]/g, "");
     const fileName = version ? `${baseName}_v${version}` : baseName;
