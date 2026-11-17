@@ -64,7 +64,7 @@ phases:
 
       # Generate image tags
       #
-      # get the first 7 chars of commit id provide by codebuild
+      # get the first 7 chars of commit id
       - COMMIT=$(git rev-parse --short HEAD)
       # Get release or semantic version tags for commit
       # HINT: validate the egrep regex matches your tagging convention.
@@ -83,11 +83,12 @@ phases:
             IMAGE_TAG=$COMMIT
         fi
       # In case multiple tags reference COMMIT, extract the last matching tag in IMAGE_TAG string
-      - IMAGE_TAG=($IMAGE_TAG)
+      - MULTI_TAG=($IMAGE_TAG)
+      - echo "MULTI_TAG len: ${#MULTI_TAG[@]}"
       - |
-        if [ ${#IMAGE_TAG} -gt 1 ]; then 
-            echo "IMAGE_TAG len: ${#IMAGE_TAG}"
-            IMAGE_TAG=${IMAGE_TAG[-1]}
+        if [ ${#MULTI_TAG[@]} -gt 1 ]; then 
+            echo "extracting the last matching tag"
+            IMAGE_TAG=${MULTI_TAG[-1]}
         fi
       - BUILD_DATE=$(TZ='America/Los_Angeles' date +"%Y%m%d.%H.%M.%S")
 
@@ -128,7 +129,7 @@ phases:
       # Build the Docker image
       - echo Building the Docker image...
       - DOCKERFILE=Dockerfile.aws
-      - docker buildx build --platform linux/amd64 -f $DOCKERFILE -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
+      #- docker buildx build --platform linux/amd64 -f $DOCKERFILE -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
 
 
   post_build:
@@ -137,16 +138,16 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker images...
       - cd $CODEBUILD_SRC_DIR
-      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
-      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
-      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
-      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
-      - |
-        if [ "$INITIAL_BUILD" == "true" ]; then 
-          echo "This is and initial build.  Pushing ${TASKDEF_IMAGETAG} tag also."
-          docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
-          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
-        fi
+      #- docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+      #- docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
+      #- docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+      #- docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
+      #- |
+      #  if [ "$INITIAL_BUILD" == "true" ]; then 
+      #    echo "This is and initial build.  Pushing ${TASKDEF_IMAGETAG} tag also."
+      #    docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
+      #    docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
+      #  fi
 
 # Obsolete - we no longer deploy as part of codepipeline run
 #
