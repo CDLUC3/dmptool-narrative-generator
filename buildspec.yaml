@@ -83,18 +83,8 @@ phases:
             IMAGE_TAG=$COMMIT
         fi
       # In case multiple tags reference COMMIT, extract the last matching tag in IMAGE_TAG string
-      #- MULTI_TAG=($IMAGE_TAG)
-      #- |
-      #  echo "MULTI_TAG len: ${#MULTI_TAG[@]}"
-      #  if [ ${#MULTI_TAG[@]} -gt 1 ]; then 
-      #      echo "extracting the last matching tag"
-      #      IMAGE_TAG=${MULTI_TAG[-1]}
-      #  fi
       - IMAGE_TAG=($IMAGE_TAG)
       - IMAGE_TAG=${IMAGE_TAG[-1]}
-
-
-
       # timestamp
       - BUILD_DATE=$(TZ='America/Los_Angeles' date +"%Y%m%d.%H.%M.%S")
 
