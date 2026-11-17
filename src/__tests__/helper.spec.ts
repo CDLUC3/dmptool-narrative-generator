@@ -4,7 +4,9 @@ import {
   safeBoolean,
   pointsToFontSize,
   formatDate,
-  getFontFamily
+  getFontFamily,
+  escapeHTML,
+  sanitizeHTML,
  } from "../helper.js";
 
 describe("safeNumber", () => {
@@ -91,5 +93,38 @@ describe("getFontFamily", () => {
   it("returns the correct font family for known values", () => {
     expect(getFontFamily("tinos")).toBe("Tinos, serif");
     expect(getFontFamily("roboto")).toBe("Roboto, sans-serif");
+  });
+});
+
+describe("escapeHTML", () => {
+  it("should escape HTML special characters", () => {
+    expect(escapeHTML(`<a href="x">Tom & Jerry's</a>`))
+      .toEqual("&lt;a href=&quot;x&quot;&gt;Tom &amp; Jerry&#39;s&lt;/a&gt;");
+  });
+
+  it("should return an empty string for missing values", () => {
+    expect(escapeHTML(undefined)).toEqual("");
+    expect(escapeHTML(null)).toEqual("");
+  });
+});
+
+describe("sanitizeHTML", () => {
+  it("should keep safe formatting and links", () => {
+    const html = `<p><strong>Bold</strong> <a href="https://example.org">link</a> <a href="mailto:a@b.org">email</a></p>`;
+    expect(sanitizeHTML(html)).toEqual(html);
+  });
+
+  it("should remove scripts and unsafe links", () => {
+    expect(sanitizeHTML(`<p>Hi<script>alert(1)</script></p>`)).toEqual("<p>Hi</p>");
+    expect(sanitizeHTML(`<a href="javascript:alert(1)">bad</a>`)).toEqual("<a>bad</a>");
+  });
+
+  it("should trim surrounding whitespace", () => {
+    expect(sanitizeHTML("  <p>Text</p>\n")).toEqual("<p>Text</p>");
+  });
+
+  it("should return an empty string for missing values", () => {
+    expect(sanitizeHTML(undefined)).toEqual("");
+    expect(sanitizeHTML(null)).toEqual("");
   });
 });

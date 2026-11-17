@@ -3,6 +3,7 @@ import type { Logger } from "pino";
 import type { JWTAccessToken } from "../helper.js";
 import type { DMPToolDMPType } from "@dmptool/types";
 import type { PlanInterface, UserPlanInterface } from "../dataAccess.js";
+import type { TemplateNarrative } from "@dmptool/utils";
 
 // Mock all imported functions from @dmptool/utils
 const mockSSMParameter = jest.fn();
@@ -11,6 +12,7 @@ const mockGetDMPs = jest.fn();
 const mockCreateDMP = jest.fn();
 const mockUpdateDMP = jest.fn();
 const mockPlanToDMPCommonStandard = jest.fn();
+const mockLoadTemplateNarrative = jest.fn();
 jest.unstable_mockModule("@dmptool/utils", () => ({
   default: {
     getSSMParameter: mockSSMParameter,
@@ -19,6 +21,7 @@ jest.unstable_mockModule("@dmptool/utils", () => ({
     createDMP: mockCreateDMP,
     updateDMP: mockUpdateDMP,
     planToDMPCommonStandard: mockPlanToDMPCommonStandard,
+    loadTemplateNarrative: mockLoadTemplateNarrative,
     EnvironmentEnum: {
       DEV: "dev",
       STAGE: "stage",
@@ -32,6 +35,7 @@ jest.unstable_mockModule("@dmptool/utils", () => ({
   createDMP: mockCreateDMP,
   updateDMP: mockUpdateDMP,
   planToDMPCommonStandard: mockPlanToDMPCommonStandard,
+  loadTemplateNarrative: mockLoadTemplateNarrative,
   EnvironmentEnum: {
     DEV: "dev",
     STAGE: "stage",
@@ -47,6 +51,7 @@ const {
   createDMP,
   updateDMP,
   planToDMPCommonStandard,
+  loadTemplateNarrative,
   EnvironmentEnum,
   DMP_LATEST_VERSION
 } = (await import("@dmptool/utils")).default;
@@ -54,9 +59,11 @@ const {
 const {
   handleMissingMaDMP,
   hasPermissionToDownloadNarrative,
+  isTemplateDownloadable,
   loadMaDMPFromDynamo,
   loadPlan,
   loadPlansForUser,
+  loadTemplate,
 } = await import("../dataAccess.js");
 
 describe("dataAccess", () => {
@@ -531,6 +538,110 @@ describe("dataAccess", () => {
     });
   });
 
+  describe("isTemplateDownloadable", () => {
+    const template = {
+      id: 10,
+      templateId: 3,
+      title: "NSF Polar Programs",
+      version: "v2",
+      visibility: "PUBLIC",
+      versionType: "PUBLISHED",
+      active: true,
+      isDefault: false,
+      owner: { uri: "https://ror.org/021nxhr62" },
+      section: [],
+    } as TemplateNarrative;
+
+    it("should allow the current published version of a public template", () => {
+      expect(isTemplateDownloadable(template)).toBe(true);
+    });
+
+    it("should allow the default template even if it is not public", () => {
+      expect(isTemplateDownloadable({ ...template, visibility: "ORGANIZATION", isDefault: true })).toBe(true);
+    });
+
+    it("should not allow a missing template", () => {
+      expect(isTemplateDownloadable(undefined)).toBe(false);
+    });
+
+    it("should not allow an organization only template", () => {
+      expect(isTemplateDownloadable({ ...template, visibility: "ORGANIZATION" })).toBe(false);
+    });
+
+    it("should not allow a draft template", () => {
+      expect(isTemplateDownloadable({ ...template, versionType: "DRAFT" })).toBe(false);
+    });
+
+    it("should not allow an old version of the template", () => {
+      expect(isTemplateDownloadable({ ...template, active: false })).toBe(false);
+    });
+  });
+
+  describe("loadTemplate", () => {
+    beforeEach(() => {
+      process.env.AWS_REGION = "us-west-2";
+      process.env.RDS_HOST = "localhost";
+      process.env.RDS_PORT = "3306";
+      process.env.RDS_DATABASE = "dmp";
+    });
+
+    it("should load the template narrative from RDS", async () => {
+      const mockTemplate = { id: 10, title: "NSF Polar Programs" };
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+      (loadTemplateNarrative as jest.Mock).mockResolvedValue(mockTemplate as never);
+
+      const result = await loadTemplate(mockLogger, 10, EnvironmentEnum.DEV);
+
+      expect(result).toEqual(mockTemplate);
+      expect(loadTemplateNarrative).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: "localhost",
+          port: 3306,
+          user: "rdsUser",
+          password: "rdsPassword",
+          database: "dmp"
+        }),
+        10
+      );
+    });
+
+    it("should return undefined when the template does not exist", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+      (loadTemplateNarrative as jest.Mock).mockResolvedValue(undefined as never);
+
+      const result = await loadTemplate(mockLogger, 999, EnvironmentEnum.DEV);
+      expect(result).toBeUndefined();
+    });
+
+    it("should return undefined and log when RDS credentials are unavailable", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce(undefined as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+
+      const result = await loadTemplate(mockLogger, 10, EnvironmentEnum.DEV);
+
+      expect(result).toBeUndefined();
+      expect(loadTemplateNarrative).not.toHaveBeenCalled();
+      expect(mockLogger.fatal).toHaveBeenCalledWith("Missing RdsUserName in SSM Parameter Store!");
+    });
+
+    it("should use the default environment when not provided", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce("rdsPassword" as never);
+      (loadTemplateNarrative as jest.Mock).mockResolvedValue(undefined as never);
+
+      await loadTemplate(mockLogger, 10);
+
+      expect(getSSMParameter).toHaveBeenCalledWith(expect.any(Object), "RdsUsername", EnvironmentEnum.DEV);
+      expect(getSSMParameter).toHaveBeenCalledWith(expect.any(Object), "RdsPassword", EnvironmentEnum.DEV);
+    });
+  });
+
   describe("handleMissingMaDMP", () => {
     const domainName = "https://example.com";
     const applicationName = "test-app";
@@ -686,6 +797,28 @@ describe("dataAccess", () => {
         mockPlan,
         false
       )).resolves.toEqual(incompleteMaDMP);
+      expect(createDMP).not.toHaveBeenCalled();
+      expect(updateDMP).not.toHaveBeenCalled();
+    });
+
+    it("should return undefined and log when RDS credentials are unavailable", async () => {
+      (getSSMParameter as jest.Mock)
+        .mockResolvedValueOnce("rdsUser" as never)
+        .mockResolvedValueOnce(undefined as never);
+
+      const result = await handleMissingMaDMP(
+        mockLogger,
+        EnvironmentEnum.DEV,
+        applicationName,
+        domainName,
+        mockPlan,
+        false
+      );
+
+      expect(result).toBeUndefined();
+      expect(mockLogger.fatal).toHaveBeenCalledWith("Missing RdsPassword in SSM Parameter Store!");
+      expect(mockLogger.fatal).toHaveBeenCalledWith("Missing RDS configuration config!");
+      expect(planToDMPCommonStandard).not.toHaveBeenCalled();
       expect(createDMP).not.toHaveBeenCalled();
       expect(updateDMP).not.toHaveBeenCalled();
     });

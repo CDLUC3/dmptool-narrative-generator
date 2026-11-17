@@ -195,6 +195,48 @@ describe("renderHtmlTemplate", () => {
     expect(html).toContain("Not answered");
   });
 
+  it("sanitizes active content from rich-text answers", () => {
+    const html = renderHTML(display, margin, font, {
+      title: "Sanitized Narrative",
+      dmp_id: { identifier: "id", type: "other" },
+      contact: {
+        name: "Alice",
+        contact_id: { identifier: "id", type: "other" },
+        affiliation: [{ affiliation_id: { identifier: "id", type: "other" }, name: "Org" }],
+      },
+      contributor: [],
+      project: [],
+      description: "desc",
+      modified: "2024-01-01",
+      narrative: {
+        template: {
+          title: "Template",
+          section: [{
+            title: "Section",
+            description: "",
+            order: 1,
+            question: [{
+              text: "Question",
+              order: 1,
+              answer: {
+                json: {
+                  type: "textArea",
+                  answer: '<p>Safe text</p><script>alert("xss")</script><a href="javascript:alert(1)" onclick="alert(1)">Unsafe link</a>',
+                  meta: { schemaVersion: "1.0" },
+                },
+              },
+            }],
+          }],
+        },
+      },
+    });
+
+    expect(html).toContain("<p>Safe text</p>");
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("javascript:");
+    expect(html).not.toContain("onclick=");
+  });
+
   it("renders related works grouped by type", () => {
     const html = renderHTML(display, margin, font, {
       title: "Works Test",

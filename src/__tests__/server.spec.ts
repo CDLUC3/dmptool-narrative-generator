@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import request from 'supertest';
 import type { Logger } from 'pino';
 import type { DMPToolDMPType } from '@dmptool/types';
+import type { TemplateNarrative } from '@dmptool/utils';
 
 process.env.APPLICATION_NAME = 'test-app';
 process.env.DOMAIN_NAME = 'example.com';
@@ -76,12 +77,23 @@ jest.unstable_mockModule('../txt.js', () => ({
   renderTXT: mockRenderTXT,
 }));
 
+const mockRenderTemplateHTML = jest.fn();
+const mockTemplateTitle = jest.fn();
+jest.unstable_mockModule('../templateHtml.js', () => ({
+  renderTemplateHTML: mockRenderTemplateHTML,
+  templateTitle: mockTemplateTitle,
+}));
+
 const mockLoadDMPFromDynamo = jest.fn();
 const mockLoadPlan = jest.fn();
 const mockLoadPlansForUser = jest.fn();
 const mockHandleMissingMaDMP = jest.fn();
 const mockHasPermissionToDownloadNarrative = jest.fn();
+const mockLoadTemplate = jest.fn();
+const mockIsTemplateDownloadable = jest.fn();
 jest.unstable_mockModule('../dataAccess.js', () => ({
+  loadTemplate: mockLoadTemplate,
+  isTemplateDownloadable: mockIsTemplateDownloadable,
   loadMaDMPFromDynamo: mockLoadDMPFromDynamo,
   loadPlan: mockLoadPlan,
   loadPlansForUser: mockLoadPlansForUser,
@@ -117,6 +129,7 @@ const pdf = await import('../pdf.js');
 const docx = await import('../docx.js');
 const txt = await import('../txt.js');
 const dataAccess= await import('../dataAccess.js');
+const templateHtml = await import('../templateHtml.js');
 const app = (await import('../server.js')).default;
 
 const mockLogger = {
@@ -175,7 +188,7 @@ describe('Server', () => {
   });
 
   describe('GET /dmps/{*splat}/narrative{.:ext}', () => {
-    it.only('should return HTML narrative with valid token and permissions', async () => {
+    it('should return HTML narrative with valid token and permissions', async () => {
       const response = await request(app)
         .get('/dmps/11.11111/A1B2C3/narrative')
         .set('Accept', 'text/html')
@@ -397,6 +410,134 @@ describe('Server', () => {
         .get('/dmps/11.11111/A1B2C3/narrative')
         .set('Accept', 'text/html')
         .set('Cookie', 'dmspt=mock-token');
+
+      expect(response.status).toBe(500);
+      expect(response.text).toBe('Document generation failed');
+    });
+  });
+
+  describe('GET /templates/:versionedTemplateId/narrative{.:ext}', () => {
+    let mockTemplate: TemplateNarrative;
+
+    beforeEach(() => {
+      mockTemplate = {
+        id: 10,
+        templateId: 3,
+        title: 'NSF: Polar Programs',
+        version: 'v2',
+        visibility: 'PUBLIC',
+        versionType: 'PUBLISHED',
+        active: true,
+        isDefault: false,
+        owner: { uri: 'https://ror.org/021nxhr62', name: 'National Science Foundation' },
+        section: [],
+      };
+      (dataAccess.loadTemplate as jest.Mock).mockResolvedValue(mockTemplate as never);
+      (dataAccess.isTemplateDownloadable as jest.Mock).mockReturnValue(true as never);
+      (templateHtml.renderTemplateHTML as jest.Mock).mockReturnValue('<html>Template HTML</html>');
+      (templateHtml.templateTitle as jest.Mock).mockReturnValue('National Science Foundation: NSF: Polar Programs');
+    });
+
+    it('should return a PDF without authentication', async () => {
+      const response = await request(app).get('/templates/10/narrative.pdf');
+
+      expect(response.status).toBe(200);
+      expect(dataAccess.loadTemplate).toHaveBeenCalledWith(mockLogger, 10, 'dev');
+      expect(mockRequireAuth).not.toHaveBeenCalled();
+    });
+
+    it('should return a PDF with the old DMP Tool file name', async () => {
+      const response = await request(app).get('/templates/10/narrative.pdf');
+
+      expect(response.status).toBe(200);
+      expect(response.header['content-type']).toBe('application/pdf');
+      expect(response.header['content-disposition']).toBe('inline; filename="NSF_Polar_Programs_v2.pdf"');
+      expect(pdf.renderPDF).toHaveBeenCalledWith('<html>Template HTML</html>');
+      expect(docx.renderDOCX).not.toHaveBeenCalled();
+    });
+
+    it('should return a DOCX', async () => {
+      const response = await request(app).get('/templates/10/narrative.docx');
+
+      expect(response.status).toBe(200);
+      expect(response.header['content-type']).toBe(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      );
+      expect(response.header['content-disposition']).toBe('attachment; filename="NSF_Polar_Programs_v2.docx"');
+      expect(docx.renderDOCX).toHaveBeenCalledWith(
+        mockLogger,
+        'National Science Foundation: NSF: Polar Programs',
+        '<html>Template HTML</html>',
+        expect.any(Object),
+        expect.any(Object)
+      );
+      expect(pdf.renderPDF).not.toHaveBeenCalled();
+    });
+
+    it('should default to a PDF when there is no extension (e.g. a browser link)', async () => {
+      const response = await request(app)
+        .get('/templates/10/narrative')
+        .set('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8');
+
+      expect(response.status).toBe(200);
+      expect(response.header['content-type']).toBe('application/pdf');
+      expect(pdf.renderPDF).toHaveBeenCalled();
+    });
+
+    it('should return a DOCX when there is no extension and the Accept header asks for one', async () => {
+      const response = await request(app)
+        .get('/templates/10/narrative')
+        .set('Accept', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+      expect(response.status).toBe(200);
+      expect(docx.renderDOCX).toHaveBeenCalled();
+      expect(pdf.renderPDF).not.toHaveBeenCalled();
+    });
+
+    it.each(['html', 'txt', 'json', 'csv', 'foo'])(
+      'should return 406 for the .%s extension without loading the template',
+      async (ext) => {
+        const response = await request(app).get(`/templates/10/narrative.${ext}`);
+
+        expect(response.status).toBe(406);
+        expect(response.text).toBe('Not Acceptable: Supported formats are PDF and DOCX');
+        expect(dataAccess.loadTemplate).not.toHaveBeenCalled();
+        expect(html.renderHTML).not.toHaveBeenCalled();
+        expect(txt.renderTXT).not.toHaveBeenCalled();
+      }
+    );
+
+    it('should return 400 for a non-numeric id', async () => {
+      const response = await request(app).get('/templates/abc/narrative.pdf');
+
+      expect(response.status).toBe(400);
+      expect(dataAccess.loadTemplate).not.toHaveBeenCalled();
+    });
+
+    it('should return 404 when the template does not exist', async () => {
+      (dataAccess.loadTemplate as jest.Mock).mockResolvedValue(undefined as never);
+      (dataAccess.isTemplateDownloadable as jest.Mock).mockReturnValue(false as never);
+
+      const response = await request(app).get('/templates/10/narrative.pdf');
+
+      expect(response.status).toBe(404);
+      expect(pdf.renderPDF).not.toHaveBeenCalled();
+    });
+
+    it('should return 404 when the template cannot be downloaded', async () => {
+      (dataAccess.isTemplateDownloadable as jest.Mock).mockReturnValue(false as never);
+
+      const response = await request(app).get('/templates/10/narrative.pdf');
+
+      expect(response.status).toBe(404);
+      expect(response.text).toBe('Template not found');
+      expect(pdf.renderPDF).not.toHaveBeenCalled();
+    });
+
+    it('should return 500 when an exception occurs', async () => {
+      (dataAccess.loadTemplate as jest.Mock).mockRejectedValue(new Error('Database error') as never);
+
+      const response = await request(app).get('/templates/10/narrative.pdf');
 
       expect(response.status).toBe(500);
       expect(response.text).toBe('Document generation failed');
