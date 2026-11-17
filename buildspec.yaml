@@ -83,8 +83,12 @@ phases:
             IMAGE_TAG=$COMMIT
         fi
       # Extract the last matching tag in IMAGE_TAG string
-      - TAGS=($IMAGE_TAG)
-      - IMAGE_TAG=${TAGS[-1]}
+      - IMAGE_TAG=($IMAGE_TAG)
+      - |
+        if [ ${#FILES} -gt 1 ]; then 
+            echo 'true'
+            IMAGE_TAG=${IMAGE_TAG[-1]}
+        fi
       - BUILD_DATE=$(TZ='America/Los_Angeles' date +"%Y%m%d.%H.%M.%S")
 
       # debug tags
