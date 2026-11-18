@@ -125,7 +125,7 @@ phases:
       # Build the Docker image
       - echo Building the Docker image...
       - DOCKERFILE=Dockerfile.aws
-      #- docker buildx build --platform linux/amd64 -f $DOCKERFILE -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
+      - docker buildx build --platform linux/amd64 -f $DOCKERFILE -t ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} .
 
 
   post_build:
@@ -134,16 +134,16 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker images...
       - cd $CODEBUILD_SRC_DIR
-      #- docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
-      #- docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
-      #- docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
-      #- docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
-      #- |
-      #  if [ "$INITIAL_BUILD" == "true" ]; then 
-      #    echo "This is and initial build.  Pushing ${TASKDEF_IMAGETAG} tag also."
-      #    docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
-      #    docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
-      #  fi
+      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+      - docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
+      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}
+      - docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}-${BUILD_DATE}
+      - |
+        if [ "$INITIAL_BUILD" == "true" ]; then 
+          echo "This is and initial build.  Pushing ${TASKDEF_IMAGETAG} tag also."
+          docker tag ${ECR_REPOSITORY_NAME}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
+          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY_NAME}:${TASKDEF_IMAGETAG}
+        fi
 
 # Obsolete - we no longer deploy as part of codepipeline run
 #
